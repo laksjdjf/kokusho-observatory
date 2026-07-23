@@ -102,20 +102,15 @@ JST = timezone(timedelta(hours=9))
 TODAY_CUTOFF_HOUR = 15   # JSTでこの時刻以降なら「当日」も取りに行く
 
 
-def resolve_end_date(mode: str) -> date:
-    """取込の終端日を決める。
+def resolve_end_date(mode: str = "auto") -> date:
+    """obsdl（過去の気象データ）から取れる終端日 = 常に「前日」。
 
-    当日の最高気温は日中の経過とともに確定していくので、実行時刻で振る舞いを変える:
-      - 15時(JST)以降 … 当日まで取る（ほぼ確定。夕方の速報用）
-      - それ以前      … 前日まで（朝6時に当日を取ると「朝までの最高＝低い値」が入る）
-    翌朝の実行で OVERLAP_DAYS ぶん取り直すため、暫定値は自動的に訂正される。
+    obsdl は当日を含む期間を要求すると CSV ではなくHTMLエラーページを返す
+    （実測: 7/18-7/22 は取得できるが 7/18-7/23 はエラー）。アーカイブなので
+    確定した日しか持っていない。当日の速報値は fetch_realtime.py が
+    気象庁の実況CSV（mdrr）から別途取得する。
     """
-    now = datetime.now(JST)
-    if mode == "today":
-        return now.date()
-    if mode == "yesterday":
-        return now.date() - timedelta(days=1)
-    return now.date() if now.hour >= TODAY_CUTOFF_HOUR else now.date() - timedelta(days=1)
+    return datetime.now(JST).date() - timedelta(days=1)
 
 
 def open_db() -> sqlite3.Connection:

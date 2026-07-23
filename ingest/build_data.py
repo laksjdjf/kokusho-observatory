@@ -108,6 +108,8 @@ def build_stations_master(pref_ids=None, include_names: set[str] | None = None) 
             continue
         out.append({
             "jma_code": s.jma_code,
+            # 速報CSV(mdrr)の「観測所番号」と一致するコード。当日値の突合に使う
+            "amedastable_code": s.amedastable_code,
             "name": s.name,
             "name_kana": s.name_kana,
             "pref": s.pref,

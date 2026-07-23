@@ -12,10 +12,12 @@ on:
   push:
     branches: [main]
   schedule:
-    # 1日2回。build_daily.py が JST の実行時刻を見て終端日を自動で決める
-    # （15時以降＝当日まで／それ以前＝前日まで）ので、cron側の出し分けは不要。
-    - cron: '0 9 * * *'    # 18:00 JST … 当日の最高気温を速報として取得
-    - cron: '0 21 * * *'   # 06:00 JST … 前日ぶんを確定値に更新
+    # 1日2回。どちらの実行でも同じ手順を流す:
+    #   build_daily.py    … obsdl（アーカイブ）から前日までの確定値
+    #   fetch_realtime.py … 実況CSVから当日の速報値
+    # 18時は当日の最高気温がほぼ出揃った状態、6時は前日ぶんが確定値へ差し替わる。
+    - cron: '0 9 * * *'    # 18:00 JST … 当日の最高気温を速報として反映
+    - cron: '0 21 * * *'   # 06:00 JST … 前日ぶんを確定値へ更新
   workflow_dispatch:
 
 permissions:
@@ -51,7 +53,8 @@ jobs:
         working-directory: ingest
         run: |
           uv run python build_data.py --with-stations   # 歴代ランキング＋地点マスタ
-          uv run python build_daily.py                   # 前回以降の日別値だけ
+          uv run python build_daily.py                   # 確定値（前日まで）の差分
+          uv run python fetch_realtime.py                # 当日の速報値（実況CSV・1リクエスト）
 
       - name: 生データをHFへ書き戻し
         working-directory: ingest
