@@ -18,7 +18,7 @@ import json
 import sqlite3
 import sys
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -98,6 +98,24 @@ def fetch_station_history(stid: str, end: date, start: date = HISTORY_START) -> 
 
 
 OVERLAP_DAYS = 10   # 気象庁が後から値を訂正することがあるので直近は取り直す
+JST = timezone(timedelta(hours=9))
+TODAY_CUTOFF_HOUR = 15   # JSTでこの時刻以降なら「当日」も取りに行く
+
+
+def resolve_end_date(mode: str) -> date:
+    """取込の終端日を決める。
+
+    当日の最高気温は日中の経過とともに確定していくので、実行時刻で振る舞いを変える:
+      - 15時(JST)以降 … 当日まで取る（ほぼ確定。夕方の速報用）
+      - それ以前      … 前日まで（朝6時に当日を取ると「朝までの最高＝低い値」が入る）
+    翌朝の実行で OVERLAP_DAYS ぶん取り直すため、暫定値は自動的に訂正される。
+    """
+    now = datetime.now(JST)
+    if mode == "today":
+        return now.date()
+    if mode == "yesterday":
+        return now.date() - timedelta(days=1)
+    return now.date() if now.hour >= TODAY_CUTOFF_HOUR else now.date() - timedelta(days=1)
 
 
 def open_db() -> sqlite3.Connection:
@@ -141,12 +159,17 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None, help="先頭N地点だけ取り込む（テスト用）")
     ap.add_argument("--full", action="store_true",
                     help="全期間を取り直してDBを作り直す（初回バックフィル用）")
+    ap.add_argument("--until", choices=["auto", "today", "yesterday"], default="auto",
+                    help="取込の終端日。auto=JST15時以降なら当日、それ以前は前日（既定）")
     args = ap.parse_args()
 
     stations = json.load(open(STATIONS_JSON, encoding="utf-8"))["stations"]
     if args.limit:
         stations = stations[: args.limit]
-    end = date.today() - timedelta(days=1)   # 当日は未確定なので昨日まで
+    end = resolve_end_date(args.until)
+    now_jst = datetime.now(JST)
+    print(f"[daily] 実行 {now_jst:%Y-%m-%d %H:%M} JST / 終端日 {end}"
+          f"{'（当日＝速報値）' if end == now_jst.date() else ''}", file=sys.stderr)
 
     if args.full and DB_PATH.exists():
         DB_PATH.unlink()

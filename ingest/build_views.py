@@ -61,8 +61,12 @@ def main() -> None:
         "JOIN stations s ON s.id=d.station_id WHERE d.date=? ORDER BY d.max_temp DESC",
         (latest,),
     ).fetchall()
+    # 当日ぶんは日中の途中経過なので速報値扱い（翌朝の実行で訂正され得る）
+    from datetime import datetime, timedelta, timezone
+    today_jst = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
     write_json(DATA_DIR / "daily_latest.json", {
         "meta": {"date": latest, "source": SOURCE, "count": len(rows),
+                 "provisional": latest == today_jst,
                  "note": "気象官署＋アメダス"},
         "records": [
             {"rank": i + 1, "jma_code": r["jma_code"], "station": r["name"],

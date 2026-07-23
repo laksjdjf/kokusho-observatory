@@ -46,7 +46,8 @@ export interface DailyRecord {
   tier: Tier
 }
 export interface DailyLatest {
-  meta: { date: string; source: string; count: number; note: string }
+  /** provisional=true は当日の途中経過（速報値）。翌朝の取込で確定値に更新される */
+  meta: { date: string; source: string; count: number; note: string; provisional?: boolean }
   records: DailyRecord[]
 }
 

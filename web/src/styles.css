@@ -172,6 +172,7 @@ td.tier-cell .badge{ padding:.2em .7em; font-size:.68rem; }
 .panel{ background:var(--panel); border:1px solid var(--line); padding:clamp(1.3rem,3vw,1.9rem); position:relative; }
 .today-head{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:.4rem 1rem; margin-bottom:1rem; }
 .today-date{ font-family:var(--font-mono); font-size:.8rem; color:var(--ink-faint); }
+.prov-badge{ margin-left:.6rem; font-size:.62rem; font-weight:700; letter-spacing:.12em; padding:.2em .6em; border:1px solid var(--gold); color:var(--gold); border-radius:2px; vertical-align:middle; cursor:help; }
 .today-top{ display:flex; align-items:flex-end; gap:.9rem; margin-bottom:1rem; flex-wrap:wrap; }
 .today-top .num{ font-size:clamp(2.6rem,7vw,3.6rem); font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); text-shadow:0 0 20px rgba(229,64,42,.45); line-height:1; }
 .today-top .unit{ font-size:1.3rem; color:var(--t3); font-weight:700; }

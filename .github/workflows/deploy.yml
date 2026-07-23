@@ -12,7 +12,10 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '0 21 * * *'   # 毎日 06:00 JST（21:00 UTC）
+    # 1日2回。build_daily.py が JST の実行時刻を見て終端日を自動で決める
+    # （15時以降＝当日まで／それ以前＝前日まで）ので、cron側の出し分けは不要。
+    - cron: '0 9 * * *'    # 18:00 JST … 当日の最高気温を速報として取得
+    - cron: '0 21 * * *'   # 06:00 JST … 前日ぶんを確定値に更新
   workflow_dispatch:
 
 permissions:

@@ -33,7 +33,10 @@ function TodayPanel({ daily }: { daily: DailyLatest }) {
   return (
     <div className="panel today-panel">
       <div className="today-head">
-        <h2 style={{ margin: 0 }}><span>直近観測日の全国最高</span></h2>
+        <h2 style={{ margin: 0 }}>
+          <span>{daily.meta.provisional ? '本日の全国最高' : '直近観測日の全国最高'}</span>
+          {daily.meta.provisional && <span className="prov-badge" title="当日の途中経過。翌朝の取込で確定値に更新されます">速報</span>}
+        </h2>
         <span className="today-date"><DateLink date={daily.meta.date} /> ・ {daily.meta.count}地点</span>
       </div>
       <div className="today-top">
