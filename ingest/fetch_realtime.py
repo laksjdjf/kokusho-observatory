@@ -44,19 +44,37 @@ def fetch_rct() -> pd.DataFrame:
     return pd.read_csv(io.BytesIO(r.content), encoding="cp932")
 
 
+CUTOFF_HOUR = 14   # 当日の最高気温はおおむね昼過ぎに出揃う
+
+
 def main() -> None:
     now = datetime.now(JST)
+    force = "--force" in sys.argv
+    # 当日の最高気温は午後に出る。朝に取り込むと「早朝の気温＝低い値」が
+    # その日の最高として表示され、確定した前日より低い値がトップに来てしまう
+    # （実際に朝6時の実行で神戸31.5℃等が本日最高になっていた）。
+    # 14時より前は当日を触らず、前日の確定値をそのまま最新にしておく。
+    if now.hour < CUTOFF_HOUR and not force:
+        print(f"[rct] {now:%H:%M} JST — {CUTOFF_HOUR}時前なので当日速報は取得しない"
+              f"（前日の確定値を最新のままにする）", file=sys.stderr)
+        return
     df = fetch_rct()
     c = list(df.columns)
     # 列は固定順: 0=観測所番号 … 6=現在時刻(日) 9=最高気温 11=起時(時) 12=起時(分)
     obs_day = int(df[c[6]].iloc[0])
     temp_col, hh_col, mm_col = c[9], c[11], c[12]
 
-    # CSVが指す「日」を実日付に直す（月初のまたぎを考慮）
+    # CSVの「現在時刻(日)」を実日付に直す。now と日がズレていても、
+    # 「日が一致する直近の過去日」まで1日ずつ遡るだけにする。
+    # 以前は『日が違えば前月』と決めつけていたため、07-24の朝に CSV がまだ
+    # 23日を指していると 06-23（前月）に書き込んでしまっていた。
     d = now.date()
-    if d.day != obs_day:
-        d = (d.replace(day=1) - timedelta(days=1))
-        d = d.replace(day=obs_day)
+    for _ in range(40):
+        if d.day == obs_day:
+            break
+        d -= timedelta(days=1)
+    else:
+        sys.exit(f"[rct] 現在時刻(日)={obs_day} に一致する直近日が見つからない")
     date_iso = d.isoformat()
 
     stations = json.load(open(STATIONS_JSON, encoding="utf-8"))["stations"]
