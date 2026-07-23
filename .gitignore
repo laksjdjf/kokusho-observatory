@@ -1,0 +1,23 @@
+# データはリポジトリに置かない。
+# 生データの正準は HuggingFace Datasets（daily_max.parquet）、
+# 派生JSON・SQLite はビルド時に生成する使い捨て成果物。
+data/
+web/public/data/
+
+# Node
+node_modules/
+web/dist/
+
+# Python / uv
+ingest/.venv/
+__pycache__/
+*.pyc
+
+# 秘密情報（HFトークン等）。CIは GitHub Secrets を使う。
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.log

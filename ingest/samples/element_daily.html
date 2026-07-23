@@ -1,0 +1,365 @@
+  
+<div class="clearfix"><input type="submit" id="buttonDelElement" value="すべての選択済みの項目をクリア"><span class="manual right"><a href="https://www.data.jma.go.jp/risk/obsdl/top/help1#koumoku_select">項目選択の使い方</a></span></div>
+<div class="clearfix" id="areaKoumokuTop">
+    <div id="aggrgPeriod">
+        <h2>データの種類
+            <span class="manual right">
+                <a href="https://www.data.jma.go.jp/risk/obsdl/top/help1#koumoku_select" style="color:#FFFFFF;">詳細</a>&nbsp;
+            </span>
+        </h2>
+        <div class="period-container clearfix">
+            <ul class="period-list">
+                                    <li class="period-item">
+                                                    <label onclick=""><input type="radio" name="aggrgPeriod" value="9" id="aggrgPeriod_9"><span>時別値</span></label>                                                                    </li>
+                                    <li class="period-item">
+                                                    <label onclick=""><input type="radio" name="aggrgPeriod" value="1" id="aggrgPeriod_1"><span>日別値</span></label>                                                                    </li>
+                                    <li class="period-item">
+                                                    <input type="radio" name="aggrgPeriod" value="8" id="N日別値">
+                            <span class="period-nday">
+                                <select class="inumber" name="nday" ><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option></select>                                <label onclick="" for="N日別値">日別値</label>
+                            </span>
+                                                                    </li>
+                                    <li class="period-item">
+                                                    <label onclick=""><input type="radio" name="aggrgPeriod" value="2" id="aggrgPeriod_2"><span>半旬別値</span></label>                                                                    </li>
+                                    <li class="period-item">
+                                                    <label onclick=""><input type="radio" name="aggrgPeriod" value="4" id="aggrgPeriod_4"><span>旬別値</span></label>                                                                    </li>
+                                    <li class="period-item">
+                                                    <label onclick=""><input type="radio" name="aggrgPeriod" value="5" id="aggrgPeriod_5"><span>月別値</span></label>                                                                    </li>
+                                    <li class="period-item">
+                                                    <label onclick=""><input type="radio" name="aggrgPeriod" value="6" id="aggrgPeriod_6"><span>3か月別値</span></label>                                                                            <span class="green s">※</span>
+                                            </li>
+                            </ul>
+            <div class="period-note">
+                <img src="web/img/koumoku_set_rmk.png" alt="備考">
+            </div>
+        </div>
+    </div>
+    <div id="comprOption">
+        <h2 class="elTitle">過去の平均値との比較オプション</h2>
+        <ul class="option-list">
+                                                <li><label onclick=""><input type="checkbox" name="comprOption" value="op1" id="comprOption_op1"><span>平年値も表示</span></label></li>
+
+                                                                <li><label onclick=""><input type="checkbox" name="comprOption" value="op2" id="comprOption_op2"><span>平年値からの差（比）も表示</span></label></li>
+
+                                                                <li class="textright s">（平年値:1991年から2020年の30年平均値）</li>
+
+                                                                <li>
+                        <input type="checkbox" value="op3" id="N年平均">
+                        <span>
+                            <label onclick="" for="N年平均">前年までの</label>
+                            <select class="inumber" name="number" ><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option></select>                            <label onclick="" for="N年平均">年平均も表示</label>
+                        </span>
+                    </li>
+                                                                <li>
+                        <input type="checkbox" value="op4" id="N年平均2">
+                        <span>
+                            <label onclick="" for="N年平均2">前年までの</label>
+                            <select class="inumber" name="number" ><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option></select>                            <label onclick="" for="N年平均2">年平均からの差（比）も表示</label>
+                        </span>
+                    </li>
+                                    </ul>
+    </div>
+</div>
+
+<div>
+    <h2 id="elTitle">項目</h2>
+
+    <div id="eltab">
+        <ul class="ui-tabs-nav">
+            <li><a href="#temptab">気温</a></li>
+            <li><a href="#raintab">降水</a></li>
+            <li><a href="#sunltab">日照/日射</a></li>
+            <li><a href="#snowtab">積雪/降雪</a> </li>
+            <li><a href="#windtab">風</a></li>
+            <li><a href="#presstab">湿度/気圧</a></li>
+            <li><a href="#other1tab">雲量/天気</a></li>
+                    </ul>
+
+        <div id="temptab" class="ellist ui-tabs-panel">
+            <table>
+                <tr>
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox" class="temp elem" name="element" value="201" id="平均気温">
+                            <span><label onclick="" for="平均気温"><span class="eltxt1"><span class="eltxt3"></span>平均気温</span></label></span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox" class="temp elem" name="element" value="210" id="日平均気温？℃以上日数">
+                            <span><label onclick="" for="日平均気温？℃以上日数"><span class="eltxt1">日平均気温</span>
+                                                                    <input type="hidden" value="25" class="inumber">25
+                                     
+                                <span class="eltxt2">℃以上の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+			</td> 
+                </tr>
+
+                <tr>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="temp elem" name="element" value="204" id="日最高気温の平均">
+                            <span><label onclick="" for="日最高気温の平均"><span class="eltxt1">日最高気温の<span class="eltxt3"></span>平均</span></label></span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6  kikan7 kikan8">
+                            <input type="checkbox"  class="temp elem" name="element" value="211" id="日平均気温？℃未満日数">
+                            <span><label onclick="" for="日平均気温？℃未満日数"><span class="eltxt1">日平均気温</span>
+                                                                    <input type="hidden" value="0" class="inumber">0
+                                                                    <span class="eltxt2">℃未満の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+			</td> 
+                </tr>
+
+                <tr>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="temp elem" name="element" value="206" id="日最低気温の平均">
+                            <span><label onclick="" for="日最低気温の平均"><span class="eltxt1">日最低気温の<span class="eltxt3"></span>平均</span></label></span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="temp elem" name="element" value="212" id="日最高気温？℃以上日数">
+                            <span><label onclick="" for="日最高気温？℃以上日数"><span class="eltxt1">日最高気温</span></label>
+                                                                    <select class="inumber">
+                                        <option value="25">25</option>
+                                        <option value="30">30</option>
+                                        <option value="35">35</option>
+                                    </select>
+                                     
+                                <label onclick="" for="日最高気温？℃以上日数"><span class="eltxt2">℃以上の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+			</td>  
+                </tr>
+
+                <tr>
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox"  class="temp elem" name="element" value="202" id="最高気温">
+                            <span><label onclick="" for="最高気温"><span class="eltxt1"><span class="eltxt3"></span>最高気温</span></label></span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="temp elem" name="element" value="213" id="日最高気温？℃未満日数">
+                            <span><label onclick="" for="日最高気温？℃未満日数"><span class="eltxt1">日最高気温</span>
+                                                                    <input type="hidden" value="0" class="inumber">0
+                                     
+                                <span class="eltxt2">℃未満の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+			</td> 
+                </tr>
+
+                <tr> 
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox" class="temp elem" name="element" value="203" id="最低気温">
+                            <span><label onclick="" for="最低気温"><span class="eltxt1"><span class="eltxt3"></span>最低気温</span></label></span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="temp elem" name="element" value="214" id="日最低気温？℃以上日数">
+                            <span><label onclick="" for="日最低気温？℃以上日数"><span class="eltxt1">日最低気温</span>
+                                                                    <input type="hidden" value="25" class="inumber">25
+                                     
+                                <span class="eltxt2">℃以上の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+			</td>
+                </tr>
+
+                <tr>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox" class="temp elem kikan4 kikan5 kikan8" name="element" value="205" id="日最高気温の最低">
+                            <span><label onclick="" for="日最高気温の最低"><span class="eltxt1">日最高気温の<span class="eltxt3"></span>最低</span></label></span><span class="green s">※</span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7  kikan8"><input type="checkbox"  class="temp elem" name="element" value="215" id="日最低気温？℃未満日数">
+                            <span><label onclick="" for="日最低気温？℃未満日数"><span class="eltxt1">日最低気温</span>
+                                                                    <input type="hidden" value="0" class="inumber">0
+                                     
+                                <span class="eltxt2">℃未満の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+			</td>
+                </tr>
+
+                <tr>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox"  class="temp elem" name="element" value="207" id="日最低気温の最高">
+                            <span><label onclick="" for="日最低気温の最高"><span class="eltxt1">日最低気温の<span class="eltxt3"></span>最高</span></label></span><span class="green s">※</span></td><td></td>
+                                        </tr>
+
+                    </table>
+            <div class="clearfix"><div class="right"><p class="green s">※官署(気象台等)のみ値があります</p></div></div>
+        </div>
+
+        <div id="raintab" class="ellist ui-tabs-panel">
+                <table>
+                    <tr><td class="elel kikan2 kikan1 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="rain elem" name="element" value="101" id="降水量の合計">
+                            <span><label onclick="" for="降水量の合計"><span class="eltxt1">降水量の<span class="eltxt3"></span>合計</span></label></span></td></tr>
+
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="rain elem" name="element" value="105" id="時間降水量の最大">
+                            <span><label onclick="" for="時間降水量の最大"><span class="eltxt1"></span></label>
+                                <select class="inumber">
+                                    <option value="10">10分間</option>
+                                    <option value="1">1時間</option>
+                                                                    </select>
+                                <label onclick="" for="時間降水量の最大"><span class="eltxt2">降水量の<span class="eltxt3"></span>最大</span></label></span></td></tr>
+
+                    <tr><td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="rain elem" name="element" value="102" id="日降水量の最大">
+                            <span><label onclick="" for="日降水量の最大"><span class="eltxt1">日降水量の<span class="eltxt3"></span>最大</span></label></span></td></tr>
+
+                    <tr><td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="rain elem" name="element" value="103" id="日降水量？mm以上日数">
+                            <span><label onclick="" for="日降水量？mm以上日数"><span class="eltxt1">日降水量</span></label>
+                                                                    <select class="inumber">
+                                        <option value="0" class="green">0.0※</option>
+                                        <option value="05" class="green">0.5※</option>
+                                        <option value="1">1</option>
+                                        <option value="10">10</option>
+                                        <option value="30">30</option>
+                                        <option value="50">50</option>
+                                        <option value="70">70</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                                                    <label onclick="" for="日降水量？mm以上日数"><span class="eltxt2">mm以上の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+				</td></tr>
+                </table>
+                <div class="clearfix"><div class="right"><p class="green s">※官署(気象台等)のみ値があります</p></div></div>
+        </div>
+
+        <div id="snowtab" class="ellist ui-tabs-panel">
+                <table>
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="snow elem" name="element" value="501" id="最深積雪">
+                            <span><label onclick="" for="最深積雪"><span class="eltxt1"><span class="eltxt3"></span>最深積雪</span></label></span></td></tr>
+
+                    <tr><td  class="elel kikan4 kikan2 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="snow elem" name="element" value="502" id="最深積雪？cm以上の日数">
+                            <span><label onclick="" for="最深積雪？cm以上の日数"><span class="eltxt1">最深積雪</span></label>
+                                                                    <select class="inumber">
+                                        <option value="0" class="green">0※</option>
+                                        <option value="1" class="green">1※</option>
+                                        <option value="3" class="magenta">3☆</option>
+                                        <option value="5">5</option>
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                        <option value="200" class="magenta">200☆</option>
+                                    </select>
+                                     
+                                <label onclick="" for="最深積雪？cm以上の日数"><span class="eltxt2">cm以上の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+				</td></tr>
+
+                    <tr><td  class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="snow elem" name="element" value="503" id="降雪量合計">
+                            <span><label onclick="" for="降雪量合計"><span class="eltxt1">降雪量の<span class="eltxt3"></span>合計</span></label></span></td></tr>
+
+                    <tr><td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="snow elem" name="element" value="504" id="降雪量日合計最大">
+                            <span><label onclick="" for="降雪量日合計最大"><span class="eltxt1">降雪量日合計の<span class="eltxt3"></span>最大</span></label></span></td></tr>
+                    <tr><td  class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="snow elem" name="element" value="505" id="降雪量日合計？cm以上の日数">
+                            <span><label onclick="" for="降雪量日合計？cm以上の日数"><span class="eltxt1">降雪量日合計</span></label>
+                                                                    <select class="inumber">
+                                        <option value="3">3</option>
+                                        <option value="5">5</option>
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                
+                                <label onclick="" for="降雪量日合計？cm以上の日数"><span class="eltxt2">cm以上の日数</span>（<span class="eltxt3 s"></span>）</label></span></td></tr>
+                </table>
+                <div class="clearfix"><div class="right"><p class="green s">※官署(気象台等)のみ値があります</p><p class="magenta s">☆アメダス地点のみ値があります</p></div></div>
+        </div>
+
+        <div id="sunltab" class="ellist ui-tabs-panel">
+                <table>
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="sunl elem" name="element" value="401" id="日照時間">
+                            <span><label onclick="" for="日照時間"><span class="eltxt1">日照時間</span></label></span></td>
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="610" id="全天日射量">
+                            <span><label onclick="" for="全天日射量"><span class="eltxt1"><span class="eltxt3"></span>合計全天日射量</span></label><span class="green s">※</span></td></tr>
+                    <tr>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6"><input type="checkbox" class="snow elem" name="element" value="402" id="日照率">
+                            <span><label onclick="" for="日照率"><span class="eltxt1">日照率(<span class="eltxt3 s"></span>)</span></label></span><span class="green s">※</span>
+                        </td>
+                        <td></td>
+                    </tr>
+
+                    <tr><td colspan="2" class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox"  class="snow elem" name="element" value="403" id="日照時間？時間未満の日数">
+                            <span><label onclick="" for="日照時間？時間未満の日数"><span class="eltxt1">日照時間</span>
+                                                                    <input type="hidden" value="01" class="inumber">0.1
+                                    <span class="eltxt2">時間未満の日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+				</td></tr>
+
+                    <tr><td colspan="1" class="elel kikan2 kikan4 kikan5 kikan6 kikan7"><input type="checkbox"  class="snow elem" name="element" value="404" id="日照率？%以上の日数">
+                            <span><label onclick="" for="日照率？%以上の日数"><span class="eltxt1">日照率</span>
+                                                                    <input type="hidden" value="40" class="inumber">40
+                                    <span class="eltxt2">%以上の日数</span>（<span class="eltxt3 s"></span>）</label></span><span class="green s">※</span></td><td></td></tr>
+                </table>
+                <div class="clearfix"><div class="right"><p class="green s">※官署(気象台等)のみ値があります</p></div></div>
+        </div>
+
+        <div id="windtab" class="ellist ui-tabs-panel">
+                <table>
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox" class="wind elem" name="element" value="301" id="平均風速">
+                            <span><label onclick="" for="平均風速"><span class="eltxt1"><span class="eltxt3"></span>平均風速</span></label></span></td></tr>
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox" class="wind elem" name="element" value="302" id="最大風速">
+                            <span><label onclick="" for="最大風速"><span class="eltxt1"><span class="eltxt3"></span>最大風速（風向）</span></label></span></td></tr>
+                    <tr><td  class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8">
+                            <input type="checkbox"  class="wind elem" name="element" value="303" id="日最大風速？以上日数"><span>
+                            <label onclick="" for="日最大風速？以上日数"><span class="eltxt1">日最大風速</span></label>
+                                                                    <select class="inumber">
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                    <label onclick="" for="日最大風速？以上日数"><span class="eltxt2">m/s以上日数</span>（<span class="eltxt3 s"></span>）</label></span>
+				   	
+                    </td></tr>  
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="wind elem" name="element" value="304" id="最大瞬間風速">
+                            <span><label onclick="" for="最大瞬間風速"><span class="eltxt1"><span class="eltxt3"></span>最大瞬間風速（風向）</span></label></span></td></tr>
+                    <tr><td  class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7"><input type="checkbox" class="wind elem" name="element" value="305" id="最多風向">
+                            <span><label onclick="" for="最多風向"><span class="eltxt1"><span class="eltxt3"></span>最多風向</span></label></span></td></tr>
+
+                </table>
+                <div class="clearfix"><div class="right"><p class="green s">※官署(気象台等)のみ値があります</p></div></div>
+        </div>
+
+        <div id="presstab" class="ellist ui-tabs-panel">
+                <table>
+                    <tr> <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="604" id="平均蒸気圧">
+                            <span><label onclick="" for="平均蒸気圧"><span class="eltxt1"><span class="eltxt3"></span>平均蒸気圧</span></label></span><!--span class="green s">※</span--></td>
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="601" id="平均現地気圧">
+                            <span><label onclick="" for="平均現地気圧"><span class="eltxt1"><span class="eltxt3"></span>平均現地気圧</span></label></span><span class="green s">※</span></td></tr>
+                    <tr>
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="605" id="平均相対湿度">
+                            <span><label onclick="" for="平均相対湿度"><span class="eltxt1"><span class="eltxt3"></span>平均相対湿度</span></label></span><!--span class="green s">※</span--></td>
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="602" id="平均海面気圧">
+                            <span><label onclick="" for="平均海面気圧"><span class="eltxt1"><span class="eltxt3"></span>平均海面気圧</span></label></span><span class="green s">※</span></td></tr>
+
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="606" id="最小相対湿度">
+                            <span><label onclick="" for="最小相対湿度"><span class="eltxt1"><span class="eltxt3"></span>最小相対湿度</span></label></span><!--span class="green s">※</span--></td>
+                        <td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7  kikan8"><input type="checkbox" class="other1 elem" name="element" value="603" id="最低海面気圧">
+                            <span><label onclick="" for="最低海面気圧"><span class="eltxt1"><span class="eltxt3"></span>最低海面気圧</span></label></span><span class="green s">※</span></td></tr>
+                </table>
+                <div class="clearfix"><div class="right"><p class="green s">※官署(気象台等)のみ値があります</p></div></div>
+            </div>
+
+            <div id="other1tab" class="ellist ui-tabs-panel">
+                <table>
+                    <tr><td class="elel kikan1 kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="607" id="平均雲量">
+                            <span><label onclick="" for="平均雲量"><span class="eltxt1"><span class="eltxt3"></span>平均雲量</span></label></span><span class="green s">※</span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7"><input type="checkbox" class="other1 elem" name="element" value="620" id="雪日数">
+                            <span><label onclick="" for="雪日数"><span><span class="eltxt1">雪日数</span>（<span class="eltxt3 s"></span>）</span></label></span><span class="green s">※</span></td></tr>
+                    
+                    <tr><td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="608" id="日平均雲量？以上日数">
+                            <span><label onclick="" for="日平均雲量？以上日数"><span class="eltxt1">日平均雲量</span> 
+                                                                    <input type="hidden" value="8.5" class="inumber">8.5
+                                     
+                            <span class="eltxt2">以上の日数</span>（<span class="eltxt3 s"></span>）</label></span><span class="green s">※</span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7"><input type="checkbox" class="other1 elem" name="element" value="621" id="雷日数">
+                            <span><label onclick="" for="雷日数"><span><span class="eltxt1">雷日数</span>（<span class="eltxt3 s"></span>）</span></label></span><span class="green s">※</span></td></tr>
+
+                    <tr>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7 kikan8"><input type="checkbox" class="other1 elem" name="element" value="609" id="日平均雲量？未満日数">
+                            <span><label onclick="" for="日平均雲量？未満日数"><span class="eltxt1">日平均雲量</span>
+                                                                    <input type="hidden" value="1.5" class="inumber">1.5
+                                     
+                            <span class="eltxt2">未満の日数</span>（<span class="eltxt3 s"></span>）</label></span><span class="green s">※</span></td>
+                        <td class="elel kikan2 kikan4 kikan5 kikan6 kikan7"><input type="checkbox" class="other1 elem" name="element" value="622" id="霧日数">
+                            <span><label onclick="" for="霧日数"><span><span class="eltxt1">霧日数</span>（<span class="eltxt3 s"></span>）</span></label></span><span class="green s">※</span></td></tr>
+                    
+                    <tr>
+                        <td class="elel kikan1"><input type="checkbox" class="other1 elem" name="element" value="701" id="天気概況：昼">
+                            <span><label onclick="" for="天気概況：昼"><span class="eltxt1">天気概況（昼：<font size="-1">06時～18時</font>）</span></label></span><span class="green s">※</span></td><td></td></tr>
+
+                    <tr> 
+                        <td class="elel kikan1"><input type="checkbox" class="other1 elem" name="element" value="702" id="天気概況：夜">
+                            <span><label onclick="" for="天気概況：夜"><span class="eltxt1">天気概況（夜：<font size="-1">18時～翌日06時</font>）</span></label></span><span class="green s">※</span></td><td></td></tr>
+
+                </table>
+                <div class="clearfix"><div class="right"><p class="green s">※官署(気象台等)のみ値があります</p></div></div>
+        </div>
+    </div>
+    <div id="areaElementOption">
+        <label onclick=""><input type="checkbox" name="kijiFlag" value="1" id="kijiFlag_1"><span>最高・最低（最大・最小）値の発生時刻を表示</span></label>    </div>
+</div>

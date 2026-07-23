@@ -1,0 +1,443 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>気象庁｜最新の気象データ</title>
+<meta name="Author" content="気象庁 Japan Meteorological Agency" />
+<meta name="keywords" content="気象庁 Japan Meteorological Agency" />
+<meta name="description" content="観測値を要素ごとに上位10位まで表示します" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<link rel="stylesheet" type="text/css" href="/com/css/define.css" media="all" />
+<link rel="stylesheet" type="text/css" href="../../css/default.css" media="all" />
+<script type="text/javascript" src="/com/js/jquery.js"></script>
+<!-- <script type="text/javascript" src="../js/jquery.js"></script> -->
+<style type="text/css" media="all">
+<!-- @import url(/com/default.css); -->
+</style>
+</head>
+
+<body>
+<noscript><div>すべての機能をご利用いただくにはJavascriptを有効にしてください。</div></noscript>
+<!--header start -->
+<div id="header_area">
+  <div id="nheader">
+    <div id="logo"><a href="//www.jma.go.jp/jma/index.html"><img src="//www.jma.go.jp/jma/com/images/logo.gif" alt="気象庁" width="120" height="67" /></a></div>
+    <div id="header2_right">
+      <div id="header2_link">
+        <ul>
+          <li xml:lang="en" lang="en"><a href="//www.jma.go.jp/jma/kokusai/multi.html">Other Languages</a></li>
+        </ul>
+      </div>
+      <div id="header2_link">
+        <ul>
+          <li xml:lang="en" lang="en"><a href="//www.jma.go.jp/jma/indexe.html">ENGLISH</a></li>
+        </ul>
+      </div>
+<!-- search -->
+      <div id="gsearch">
+        <form id="cse-search-box" action="//google.com/cse">
+          <input type="hidden" name="cx" value="009950868052057056798:0yrbmp7chwi">
+          <input type="hidden" name="ie" value="UTF-8">
+          <input type="text" name="q">
+          <input type="image" name="sa" src="//www.jma.go.jp/jma/com/images/btn_search6.png" alt="検索">
+        </form>
+        <script type="text/javascript" src="//www.google.com/cse/brand?form=cse-search-box&lang=ja"></script>
+      </div>
+<!-- search end-->
+    </div>
+    <ul id="gnavi">
+      <li><a href="//www.jma.go.jp/">ホーム</a></li>
+      <li><a href="//www.jma.go.jp/jma/menu/menuflash.html">防災情報</a></li>
+      <li><a href="//www.jma.go.jp/jma/menu/menureport.html" class="on">各種データ・資料</a></li>
+      <li><a href="//www.jma.go.jp/jma/menu/areas.html">地域の情報</a></li>
+      <li><a href="//www.jma.go.jp/jma/menu/menuknowledge.html">知識・解説</a></li>
+      <li><a href="//www.jma.go.jp/jma/menu/menuappli.html">各種申請・ご案内</a></li>
+    </ul>
+  </div>
+</div>
+<!--header end -->
+
+
+<div id="contents_area4">
+	<div id="ncontents4">
+<!-- pankuzu menu -->
+		<ul class="breadcrumb2">
+			<li><a href="//www.jma.go.jp/">ホーム</a>&nbsp;&gt;&nbsp;</li>
+			<li><a href="//www.jma.go.jp/jma/menu/menureport.html">各種データ・資料</a>&nbsp;&gt;&nbsp;</li>
+			<li><a href="../index.html">最新の気象データ</a>&nbsp;&gt;&nbsp;</li>
+			<li>毎日の全国観測値ランキング</li>
+		</ul>
+<!-- //pankuzu menu -->
+
+
+		<div id="main">
+<!-- contents -->
+<h1>毎日の全国観測値ランキング</h1>
+<p>
+	観測値を要素ごとに上位10位まで表示します。最近1週間分をご覧になれます。※富士山・南鳥島・昭和(南極)は除外しています。
+</p>
+
+<div class="indent">
+<ul class='contentslink ltx'>
+<li><a href='data0722.html'>今日&emsp;（7月22日）の全国観測値ランキング</a>　（<a href='prerct0722.html'>降水量の詳細</a>）</li>
+<li><a href='data0721.html'>昨日&emsp;（7月21日）の全国観測値ランキング</a></li>
+<li><a href='data0720.html'>一昨日（7月20日）の全国観測値ランキング</a></li>
+<li><a href='data0719.html'>7月19日の全国観測値ランキング</a></li>
+<li><a href='data0718.html'>7月18日の全国観測値ランキング</a></li>
+<li><a href='data0717.html'>7月17日の全国観測値ランキング</a></li>
+<li><a href='data0716.html'>7月16日の全国観測値ランキング</a></li>
+<li><a href='data0715.html'>7月15日の全国観測値ランキング</a></li>
+</ul>
+﻿
+</div>
+<br>
+この表は、20分ごとに更新します。<br>
+表示される値は速報値であるため、修正される可能性があります。<br>
+<!---	気象官署データについては翌日2時ごろに確定しますので、それまでの間は変更する可能性があります。<br>
+		詳細については、凡例の「<a href="#usename">使用するデータ</a>」をご覧下さい。<br> 					 --->
+<br>
+
+<!------------------------------------------------------------------------------------------------------------->
+<A NAME="2"></A>
+<h2>凡例</h2>
+<!------------------------------------------------------------->
+<h3>掲載要素</h3>
+<div class="indent">
+	<p>日別に、次の要素ごとに上位10位を表示します。</p>
+
+	<table class="data2" summary="掲載要素">
+<!---	<caption class="m">掲載要素</caption>	--->
+		<tr class="mtx">
+			<th style="white-space:nowrap" scope="col">要素</th>
+			<th style="white-space:nowrap" scope="col">日別の全国観測値ランキング</th>
+			<th style="white-space:nowrap" scope="col">降水量の詳細</th>
+			<th style="white-space:nowrap" scope="col">降雪量の詳細（冬季のみ）</th>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日最高気温の高い方から</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日最低気温の低い方から</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日最高気温の低い方から</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日最低気温の高い方から</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>		<tr class="mtx">
+			<td style="white-space:nowrap">1時間降水量　現在の値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">−</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">3時間降水量　現在の値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">−</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">6時間降水量　現在の値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">−</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">12時間降水量　現在の値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">−</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">24時間降水量　現在の値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">−</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">48時間降水量　現在の値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">−</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">72時間降水量　現在の値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">−</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">1時間降水量の日最大値（5mm以上のみ）</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">3時間降水量の日最大値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">6時間降水量の日最大値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">12時間降水量の日最大値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">24時間降水量の日最大値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">48時間降水量の日最大値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">72時間降水量の日最大値（5mm以上のみ）
+			</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">掲載</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日降水量（5mm以上のみ）</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日最大風速</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日最大瞬間風速</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">積雪の深さ　現在の値（冬季のみ）</td>
+			<td style="text-align:center">掲載（今日のみ）</th>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="white-space:nowrap">日最深積雪（5cm以上のみ）（冬季のみ）</td>
+			<td style="text-align:center">掲載</th>
+			<td style="text-align:center">−</td>
+			<td style="text-align:center">−</td>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">3時間降雪量　現在の値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">-</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">6時間降雪量　現在の値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">-</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">12時間降雪量　現在の値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">-</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">24時間降雪量　現在の値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">-</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">48時間降雪量　現在の値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">-</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">72時間降雪量　現在の値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">-</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">3時間降雪量の日最大値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">6時間降雪量の日最大値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">12時間降雪量の日最大値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">24時間降雪量の日最大値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">48時間降雪量の日最大値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr>
+		<tr class="mtx">
+			<td style="WHITE-SPACE: nowrap">72時間降雪量の日最大値（5cm以上のみ）（冬季のみ）
+			</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+			<td style="TEXT-ALIGN: center">−</td>
+			<td style="TEXT-ALIGN: center">掲載</TH>
+		</tr></table>
+	<br>
+	なお、3、6、12、24、48、72時間降水量は、10分ごとの降水量をもとに、3、6、12、24、48、72時間降雪量は、1時間ごとの降雪の深さをもとに、以下のように求めています。
+	<br>
+	<ul>
+		例1：15時30分の3時間降水量は、「12時30分～15時30分」までの降水量の合計<br>
+		例2：0時10分の24時間降水量は、「前日の0時10分～今日の0時10分」までの降水量の合計<br>
+		例3：0時10分の48時間降水量は、「2日前の0時10分～今日の0時10分」までの降水量の合計<br>
+		例4：15時30分の72時間降水量は、「3日前の15時30分～今日の15時30分」までの降水量の合計<br>
+		例5：15時00分の3時間降雪量は、「12時00分～15時00分」までの降雪の深さの合計<br>
+		例6：15時00分の6時間降雪量は、「09時00分～15時00分」までの降雪の深さの合計<br>
+		例7：15時00分の24時間降雪量は、「前日の15時00分～今日の15時00分」までの降雪の深さの合計<br>
+		例8：15時00分の72時間降雪量は、「3日前の15時00分～今日の15時00分」までの降雪の深さの合計<br>
+	</ul>
+	<br>
+	<p>
+		また、日最大1時間降水量は、0時01分から24時00分までの1分ごとに集計した1時間降水量のうち、最も大きい値です。<br>
+		日最大3、6、12、24、48、72時間降水量は、0時10分から24時00分までの10分ごとに集計した値のうち、最も大きい値です。<br>
+		日最大3、6、12、24、48、72時間降雪量は、1時00分から24時00分までの1時間ごとに集計した値のうち、最も大きい値です。
+	</p>
+	<p>気象台等では、1時間ごとの降水量をもとにして求めた月最大24時間降水量の統計も別に行っています。「過去の気象データの検索」の各地点のページにある「地点ごとの観測史上１～１０位の値」をご覧ください。</p>
+</div>
+<!------------------------------------------------------------->
+<!--
+<h3>更新時刻</h3>
+<div class="l3">
+<p class="mtx">
+	毎50分前後に直前の正時までの速報値により更新します。<br>
+	また、アメダスの確定値は翌日の9時ころ、気象官署の確定値は翌日の14時ころに更新します。
+</p>
+</div>
+-->
+<!------------------------------------------------------------->
+<br>
+<h3>データに付加する記号</h3>
+<div class="indent">
+	データに付加する記号の意味は次のとおりです。
+	<br>
+	<table class="data2" summary="データに付加する記号">
+		<tr class="mtx">
+			<th style="white-space:nowrap" scope="col">表示例</th>
+			<th scope="col">意味</th>
+			<th scope="col">解説</th>
+		</tr>
+		<tr class="mtx">
+			<td>値</th>
+			<td style="white-space:nowrap">正常値</td>
+			<td>統計値を求める基礎となる資料が全て揃っている値です。</td>
+		</tr>
+		<tr class="mtx">
+			<td>値)</td>
+			<td style="white-space:nowrap">準正常値</th>
+			<td>統計を行う対象資料が許容範囲内で欠けていますが、上位の統計に用いる際は一部の例外を除いて原則として正常値と同等に扱います。必要な資料数は、要素または現象、統計方法により若干異なりますが、全体数の80％を基準とします。</td>
+		</tr>
+		<tr class="mtx">
+			<td>値]</td>
+			<td style="white-space:nowrap">資料不足値</th>
+			<td>統計を行う対象資料が許容範囲を超えて欠けています。値そのものを信用することはできず、通常は上位の統計に用いませんが、極値、合計、度数等の統計では、その値以上（以下）であることが確実である、といった性質を利用して統計に利用できる場合があります。</td>
+		</tr>
+	</table>
+</div>
+
+<a name="usename"></a>
+<h3>観測所の種別</h3>
+<div class="indent">
+	地点には「アメダス」と地上気象観測を行う「気象台、測候所、特別地域気象観測所」の2種類があります。<br>
+	このうち気象台等の地点には「東京*」のように「*」をつけています。
+</div>
+<!---
+	<ul class="mtx">
+		<li>「気象官署」「アメダス」とも10分ごとにデータを取得します。
+		<li>南鳥島は、データ取得が翌々日以降ですので表示されません。また、富士山と昭和（南極）は除外しています。
+		<li>「1時間降水量　現在の値」と、翌日2時頃までの「日最大1時間降水量」は、気象官署においてもアメダスのデータを用いています。ただし、これまでの1位の値は気象官署の値を用いています。
+		<li>「3・24・72時間降水量　現在の値」と、「日最大3・24・72時間降水量」は、気象官署においてもアメダスのデータを用いています。
+		<li>「日最大瞬間風速」は気象官署と<a href="../man/new_amedas.htm">一部のアメダス観測所</a>のデータを用いています。
+	</ul>
+--->
+
+</div>
+
+<!-- //contents -->
+<p class="totop"><a href="#nheader">このページのトップへ</a></p>
+</div>
+</div>
+
+<div id="footer_area">
+	<div id="nfooter">
+		<ul>
+			<li><a href="//www.jma.go.jp/jma/kishou/info/coment.html">気象庁ホームページについて</a></li>
+		</ul>
+	</div>
+</div>
+</body>
+</html>

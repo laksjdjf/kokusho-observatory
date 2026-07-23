@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最高気温マニア ― 酷暑オブザーバトリー</title>
+<style>
+  /* ============================================================
+     TOKENS
+     A committed dark, radiant-heat world. Neutrals lean warm on
+     purpose (never pure grey/black) — like asphalt still holding
+     the day's heat after dark.
+  ============================================================ */
+  :root{
+    --bg:            #120c09;
+    --bg-deep:       #0b0705;
+    --panel:         #1d140f;
+    --panel-2:       #241810;
+    --line:          rgba(245,236,225,.13);
+    --line-strong:   rgba(245,236,225,.22);
+
+    --ink:           #f5ece1;
+    --ink-dim:       #c9b6a4;
+    --ink-faint:     #8d7867;
+
+    --gold:          #e7a03d;
+    --gold-soft:     rgba(231,160,61,.35);
+    --gold-glow:     rgba(231,160,61,.55);
+
+    /* tier scale — brightens in hue, deepens in danger as it climbs */
+    --t1:            #f2d24e;   /* 夏日   ≥25℃ */
+    --t1-bg:         rgba(242,210,78,.13);
+    --t2:            #f0913a;   /* 真夏日 ≥30℃ */
+    --t2-bg:         rgba(240,145,58,.15);
+    --t3:            #e5402a;   /* 猛暑日 ≥35℃ */
+    --t3-bg:         rgba(229,64,42,.16);
+    --t4:            #ff3b5c;   /* 酷暑日 glow  ≥40℃ */
+    --t4-deep:       #9c1030;   /* 酷暑日 base */
+    --t4-bg:         rgba(156,16,48,.24);
+
+    --font-display: "Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","YuGothic","Meiryo",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --font-formal:  "Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+    --font-mono:    "SF Mono",SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+
+    --heat-scroll: 0;
+    --container: 1120px;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ background:var(--bg); }
+  html,body{ max-width:100%; overflow-x:hidden; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-display);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1,h2,h3{ text-wrap:balance; margin:0; }
+  p{ margin:0; }
+  ::selection{ background: var(--t3); color:#120c09; }
+
+  a{ color:var(--gold); }
+  :focus-visible{ outline:2px solid var(--gold); outline-offset:3px; border-radius:2px; }
+
+  /* ============================================================
+     AMBIENT HEAT FIELD — animated background + film grain
+  ============================================================ */
+  .heatfield{
+    position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(156,16,48,.35), transparent 60%),
+      linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 40%, var(--bg) 100%);
+  }
+  .blob{
+    position:absolute; border-radius:50%; filter: blur(70px);
+    opacity:.55; mix-blend-mode: screen;
+    will-change: transform;
+  }
+  .blob1{ width:60vmax; height:60vmax; left:-15vmax; top:-25vmax; background: radial-gradient(circle, var(--t3) 0%, transparent 70%); animation: drift1 34s ease-in-out infinite alternate; }
+  .blob2{ width:50vmax; height:50vmax; right:-18vmax; top:5vmax; background: radial-gradient(circle, var(--t2) 0%, transparent 70%); animation: drift2 28s ease-in-out infinite alternate; }
+  .blob3{ width:70vmax; height:70vmax; left:20vmax; bottom:-40vmax; background: radial-gradient(circle, var(--t4-deep) 0%, transparent 70%); animation: drift3 40s ease-in-out infinite alternate; }
+  @keyframes drift1{ from{ transform:translate(0,0) scale(1);} to{ transform:translate(6vmax,4vmax) scale(1.12);} }
+  @keyframes drift2{ from{ transform:translate(0,0) scale(1);} to{ transform:translate(-5vmax,6vmax) scale(1.08);} }
+  @keyframes drift3{ from{ transform:translate(0,0) scale(1);} to{ transform:translate(4vmax,-5vmax) scale(1.15);} }
+  .heatfield-tint{
+    position:absolute; inset:0;
+    filter: hue-rotate(calc(var(--heat-scroll) * -22deg)) saturate(calc(1 + var(--heat-scroll) * .5));
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255,59,92, calc(var(--heat-scroll) * .18)), transparent 65%);
+    transition: background .2s linear;
+  }
+
+  .grain{
+    position:fixed; inset:0; z-index:60; pointer-events:none;
+    opacity:.05; mix-blend-mode:overlay; background-repeat:repeat;
+  }
+
+  /* ============================================================
+     LAYOUT SHELL
+  ============================================================ */
+  main, header.masthead, footer.site-footer{ position:relative; z-index:1; }
+  .wrap{ max-width:var(--container); margin:0 auto; padding:0 clamp(1.1rem, 4vw, 2.5rem); }
+
+  header.masthead{ padding: clamp(2.2rem,6vw,3.6rem) 0 1.2rem; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:.6em;
+    font-size:.72rem; letter-spacing:.32em; color:var(--gold);
+    text-transform:uppercase; font-weight:600;
+  }
+  .eyebrow::before{ content:''; width:1.6em; height:1px; background:var(--gold); opacity:.7; }
+  .brand{
+    margin-top:.6rem;
+    font-size: clamp(1.9rem, 5.2vw, 3.1rem);
+    font-weight:800; letter-spacing:.01em;
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:.5rem .8rem;
+  }
+  .brand-sub{
+    font-family: var(--font-formal); font-weight:500;
+    font-size: clamp(.85rem, 2vw, 1.05rem);
+    color: var(--ink-faint); letter-spacing:.08em;
+  }
+  .tagline{
+    margin-top:.7rem; font-family:var(--font-formal); font-size:1rem;
+    color:var(--ink-dim); letter-spacing:.03em;
+  }
+
+  main{ display:flex; flex-direction:column; gap: clamp(2.6rem,6vw,4.2rem); padding-bottom:4rem; }
+
+  section > h2{
+    font-size: 1.05rem; letter-spacing:.14em; font-weight:700;
+    color: var(--ink); display:flex; align-items:center; gap:.7rem;
+    margin-bottom:1.1rem;
+  }
+  section > h2 .h2-rule{ flex:1; height:1px; background:linear-gradient(90deg, var(--line-strong), transparent); }
+  section > h2 .h2-tag{ font-family:var(--font-mono); font-size:.68rem; color:var(--ink-faint); letter-spacing:.05em; font-weight:400; }
+
+  /* ============================================================
+     HERO — the record plaque
+  ============================================================ */
+  .hero-plaque{
+    position:relative;
+    background: linear-gradient(165deg, var(--panel-2) 0%, var(--panel) 55%, var(--bg-deep) 100%);
+    border:1px solid var(--line);
+    padding: clamp(2rem,6vw,3.6rem) clamp(1.4rem,6vw,3.6rem);
+    text-align:center;
+    isolation:isolate;
+    animation: flareIn 1.1s cubic-bezier(.2,.8,.25,1) both;
+    transition: box-shadow .5s ease, transform .5s ease;
+    box-shadow: 0 0 60px -20px rgba(156,16,48,.5), inset 0 0 80px rgba(0,0,0,.35);
+  }
+  .hero-plaque.is-hot{ box-shadow: 0 0 100px -12px rgba(255,59,92,.65), inset 0 0 90px rgba(0,0,0,.3); }
+  @keyframes flareIn{
+    0%{ opacity:0; transform:scale(.94); }
+    55%{ opacity:1; }
+    100%{ opacity:1; transform:scale(1); }
+  }
+
+  .corner{ position:absolute; width:20px; height:20px; border:2px solid var(--gold); opacity:.75; }
+  .corner.tl{ top:10px; left:10px; border-width:2px 0 0 2px; }
+  .corner.tr{ top:10px; right:10px; border-width:2px 2px 0 0; }
+  .corner.bl{ bottom:10px; left:10px; border-width:0 0 2px 2px; }
+  .corner.br{ bottom:10px; right:10px; border-width:0 2px 2px 0; }
+
+  .hero-eyebrow{
+    font-size:.78rem; letter-spacing:.3em; color:var(--gold); text-transform:uppercase; font-weight:700;
+  }
+  .hero-readout{
+    margin: .5rem 0 .3rem;
+    font-weight:800; line-height:1;
+    font-size: clamp(4.6rem, 17vw, 10.5rem);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    letter-spacing:-.02em;
+    text-shadow:
+      0 0 14px rgba(255,59,92,.55),
+      0 0 44px rgba(255,59,92,.4),
+      0 0 90px rgba(156,16,48,.55);
+    display:inline-flex; align-items:flex-end; gap:.15em;
+    filter: url(#heatHaze);
+    animation: heatWobble 5.5s ease-in-out infinite;
+  }
+  .hero-plaque.is-hot .hero-readout{ filter: url(#heatHazeStrong); }
+  .hero-readout .unit{ font-size:.42em; font-weight:700; color:var(--t4); }
+  @keyframes heatWobble{
+    0%,100%{ transform:translate(0,0) skewX(0deg); }
+    25%{ transform:translate(.5px,-.6px) skewX(.12deg); }
+    50%{ transform:translate(-.6px,.4px) skewX(-.1deg); }
+    75%{ transform:translate(.4px,.3px) skewX(.08deg); }
+  }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:.45em;
+    padding:.32em .95em; border-radius:999px;
+    font-size:.78rem; font-weight:700; letter-spacing:.08em;
+    border:1px solid transparent;
+  }
+  .badge::before{ content:''; width:.5em; height:.5em; border-radius:50%; background:currentColor; }
+  .badge.tier-1{ color:var(--t1); background:var(--t1-bg); border-color:rgba(242,210,78,.3); }
+  .badge.tier-2{ color:var(--t2); background:var(--t2-bg); border-color:rgba(240,145,58,.32); }
+  .badge.tier-3{ color:var(--t3); background:var(--t3-bg); border-color:rgba(229,64,42,.35); }
+  .badge.tier-4{ color:var(--t4); background:var(--t4-bg); border-color:rgba(255,59,92,.4); animation: badgePulse 2.2s ease-in-out infinite; }
+  @keyframes badgePulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,59,92,.45); }
+    50%{ box-shadow:0 0 14px 3px rgba(255,59,92,.45); }
+  }
+
+  .hero-meta{
+    margin: 1.6rem auto 0; display:flex; justify-content:center; gap: clamp(1.4rem,5vw,3.2rem);
+    flex-wrap:wrap; max-width:34rem;
+  }
+  .hero-meta > div{ text-align:center; }
+  .hero-meta dt{
+    font-size:.68rem; letter-spacing:.18em; color:var(--ink-faint); text-transform:uppercase; margin-bottom:.35rem;
+  }
+  .hero-meta dd{ margin:0; font-family:var(--font-formal); font-size:1.15rem; color:var(--ink); }
+
+  .hero-note{
+    margin-top:1.3rem; font-size:.82rem; color:var(--ink-faint); font-family:var(--font-mono);
+    letter-spacing:.01em;
+  }
+
+  /* ============================================================
+     LEGEND CHIPS
+  ============================================================ */
+  .legend-row{ display:flex; flex-wrap:wrap; gap:.8rem; }
+  .chip{
+    flex:1 1 160px; min-width:150px;
+    background:var(--panel); border:1px solid var(--line);
+    border-left:3px solid var(--tier-color, var(--gold));
+    padding:.9rem 1.1rem; display:flex; flex-direction:column; gap:.2rem;
+  }
+  .chip .chip-name{ font-weight:700; font-size:.98rem; color:var(--ink); display:flex; align-items:center; gap:.5rem; }
+  .chip .chip-range{ font-family:var(--font-mono); font-size:.76rem; color:var(--ink-faint); letter-spacing:.02em; }
+  .chip.c1{ --tier-color: var(--t1); } .chip.c2{ --tier-color: var(--t2); }
+  .chip.c3{ --tier-color: var(--t3); } .chip.c4{ --tier-color: var(--t4); }
+  .chip .dot{ width:.6em; height:.6em; border-radius:50%; background:var(--tier-color); flex:none; }
+  .chip.c4 .dot{ animation: badgePulse 2.2s ease-in-out infinite; }
+  .shimmer-text{
+    background: linear-gradient(100deg, var(--t3) 20%, #ffd8a8 45%, var(--t3) 70%);
+    background-size:220% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation: shimmerText 3.4s linear infinite;
+    font-weight:700;
+  }
+  @keyframes shimmerText{ 0%{ background-position:0% 0; } 100%{ background-position:-220% 0; } }
+
+  /* ============================================================
+     TODAY PANEL + HEAT SPINE (2-col on wide screens)
+  ============================================================ */
+  .split{ display:grid; grid-template-columns: 1fr 1fr; gap: clamp(1.2rem,3vw,2rem); }
+  @media (max-width: 860px){ .split{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line);
+    padding: clamp(1.3rem,3vw,1.9rem);
+    position:relative;
+  }
+
+  .today-readout{
+    display:flex; align-items:baseline; gap:.6rem; margin:.4rem 0 1rem;
+  }
+  .today-readout .num{
+    font-size:clamp(2.4rem,7vw,3.4rem); font-weight:800; font-variant-numeric:tabular-nums;
+    color:var(--ink); text-shadow:0 0 20px rgba(229,64,42,.45);
+  }
+  .today-readout .unit{ font-size:1.3rem; color:var(--t3); font-weight:700; }
+  .today-loc{ font-family:var(--font-formal); font-size:1.05rem; color:var(--ink-dim); margin-bottom:1.1rem; }
+
+  .stat-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:.9rem; margin-top:1rem; }
+  .stat{ border-top:1px solid var(--line); padding-top:.6rem; }
+  .stat .stat-num{ font-family:var(--font-mono); font-size:1.4rem; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .stat .stat-label{ font-size:.68rem; letter-spacing:.06em; color:var(--ink-faint); margin-top:.15rem; }
+
+  /* heat spine */
+  .spine{ display:flex; flex-direction:column; gap:.55rem; }
+  .spine-row{
+    display:grid; grid-template-columns: 4.2rem 1fr 3.6rem; align-items:center; gap:.8rem;
+    opacity:0; transform:translateX(-10px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .spine-row.is-visible{ opacity:1; transform:none; }
+  .spine-row .region{ font-size:.82rem; color:var(--ink-dim); }
+  .spine-track{ position:relative; height:6px; background:rgba(245,236,225,.08); border-radius:3px; overflow:visible; }
+  .spine-fill{ position:absolute; inset:0; border-radius:3px; background:linear-gradient(90deg, var(--t1), var(--fill-color)); width:var(--fill-w,50%); }
+  .spine-dot{
+    position:absolute; top:50%; left:var(--fill-w,50%); transform:translate(-50%,-50%);
+    width:12px; height:12px; border-radius:50%; background:var(--fill-color);
+    box-shadow:0 0 10px 2px color-mix(in srgb, var(--fill-color) 70%, transparent);
+  }
+  .spine-row.hot .spine-dot{ animation: badgePulse 2s ease-in-out infinite; }
+  .spine-row .val{ font-family:var(--font-mono); text-align:right; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:700; }
+
+  /* ============================================================
+     RANKING TABLE
+  ============================================================ */
+  .table-scroll{ overflow-x:auto; border:1px solid var(--line); }
+  table{ border-collapse:collapse; width:100%; min-width:640px; }
+  thead th{
+    text-align:left; font-size:.7rem; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:600; padding:.8rem 1rem; border-bottom:1px solid var(--line-strong);
+    background:var(--bg-deep); position:sticky; top:0;
+  }
+  tbody td{ padding:.75rem 1rem; border-bottom:1px solid var(--line); font-size:.92rem; }
+  tbody tr{
+    border-left:3px solid var(--tier-color, transparent);
+    background: var(--tier-bg, transparent);
+    opacity:0; transform:translateY(10px);
+    transition: opacity .45s ease, transform .45s ease, background .3s ease;
+  }
+  tbody tr.is-visible{ opacity:1; transform:none; }
+  tbody tr:hover{ filter:brightness(1.18); }
+  tbody tr.tier-4{ animation: rowGlow 2.4s ease-in-out infinite; }
+  @keyframes rowGlow{
+    0%,100%{ box-shadow: inset 0 0 24px rgba(156,16,48,.18); }
+    50%{ box-shadow: inset 0 0 40px rgba(255,59,92,.28); }
+  }
+  td.rank{ font-family:var(--font-mono); color:var(--ink-faint); }
+  td.temp{ font-family:var(--font-mono); font-weight:800; font-variant-numeric:tabular-nums; font-size:1.05rem; }
+  tr.tier-1 td.temp{ color:var(--t1); } tr.tier-2 td.temp{ color:var(--t2); }
+  tr.tier-3 td.temp{ color:var(--t3); } tr.tier-4 td.temp{ color:var(--t4); text-shadow:0 0 10px rgba(255,59,92,.5); }
+  td.station{ font-family:var(--font-formal); color:var(--ink); }
+  td.pref{ color:var(--ink-dim); }
+  td.date{ font-family:var(--font-mono); color:var(--ink-faint); font-size:.85rem; }
+  td.tier-cell .badge{ padding:.2em .7em; font-size:.68rem; }
+
+  /* ============================================================
+     FOOTER
+  ============================================================ */
+  .site-footer{
+    border-top:1px solid var(--line); padding: 1.6rem 0 2.4rem;
+    font-size:.76rem; color:var(--ink-faint); font-family:var(--font-mono);
+  }
+  .site-footer .wrap{ display:flex; flex-wrap:wrap; gap:.6rem 1.4rem; justify-content:space-between; }
+
+  /* ============================================================
+     MOTION SAFETY
+  ============================================================ */
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important; scroll-behavior:auto !important; }
+  }
+  html[data-motion="reduced"] *{
+    animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ambient heat background -->
+  <div class="heatfield" aria-hidden="true">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+    <div class="heatfield-tint"></div>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- shared SVG heat-haze filters -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="heatHaze" x="-30%" y="-30%" width="160%" height="160%">
+        <feTurbulence type="fractalNoise" numOctaves="2" seed="7" result="noise">
+          <animate attributeName="baseFrequency" values="0.008 0.03;0.018 0.045;0.008 0.03" dur="7s" repeatCount="indefinite"/>
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="heatHazeStrong" x="-40%" y="-40%" width="180%" height="180%">
+        <feTurbulence type="fractalNoise" numOctaves="2" seed="11" result="noise2">
+          <animate attributeName="baseFrequency" values="0.01 0.04;0.025 0.06;0.01 0.04" dur="4.5s" repeatCount="indefinite"/>
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise2" scale="14" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <header class="masthead">
+    <div class="wrap">
+      <p class="eyebrow">全国気温観測記録 追跡ダッシュボード</p>
+      <h1 class="brand">最高気温マニア <span class="brand-sub">— 酷暑オブザーバトリー —</span></h1>
+      <p class="tagline">記録は、破られるために存在する。今日もどこかで、体温を超える空気が街を包む。</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+
+      <!-- HERO -->
+      <section class="hero" aria-labelledby="hero-heading">
+        <div class="hero-plaque" tabindex="0">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+
+          <p class="hero-eyebrow">日本歴代最高気温 ・ タイ記録</p>
+          <div class="hero-readout" id="hero-heading">
+            <span class="num">41.1</span><span class="unit">℃</span>
+          </div>
+          <span class="badge tier-4">酷暑日 ≥40℃</span>
+
+          <dl class="hero-meta">
+            <div><dt>観測地点</dt><dd>静岡県 浜松</dd></div>
+            <div><dt>観測日</dt><dd>2020年8月17日</dd></div>
+          </dl>
+          <p class="hero-note">※ 同 41.1℃ ― 埼玉県 熊谷（2018年7月23日）と national tie</p>
+        </div>
+      </section>
+
+      <!-- LEGEND -->
+      <section aria-label="気温カテゴリ凡例">
+        <h2><span>カテゴリ凡例</span><span class="h2-rule"></span><span class="h2-tag">JMA CLASS</span></h2>
+        <div class="legend-row">
+          <div class="chip c1">
+            <span class="chip-name"><span class="dot"></span>夏日</span>
+            <span class="chip-range">≥ 25.0℃</span>
+          </div>
+          <div class="chip c2">
+            <span class="chip-name"><span class="dot"></span>真夏日</span>
+            <span class="chip-range">≥ 30.0℃</span>
+          </div>
+          <div class="chip c3">
+            <span class="chip-name"><span class="dot"></span><span class="shimmer-text">猛暑日</span></span>
+            <span class="chip-range">≥ 35.0℃</span>
+          </div>
+          <div class="chip c4">
+            <span class="chip-name"><span class="dot"></span>酷暑日</span>
+            <span class="chip-range">≥ 40.0℃ ・ 2025年 気象庁定義</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TODAY + HEAT SPINE -->
+      <div class="split">
+        <section class="panel" aria-labelledby="today-heading">
+          <h2 id="today-heading" style="margin-bottom:.2rem;"><span>本日の全国最高</span></h2>
+          <p style="font-family:var(--font-mono); font-size:.72rem; color:var(--ink-faint); margin-bottom:.8rem;">2026-07-22 15:40 現在 ・ ダミーデータ</p>
+          <div class="today-readout">
+            <span class="num">38.7</span><span class="unit">℃</span>
+          </div>
+          <p class="today-loc">群馬県 伊勢崎 <span class="badge tier-3" style="margin-left:.6rem;">猛暑日</span></p>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num" style="color:var(--t3)">312</div><div class="stat-label">猛暑日地点数</div></div>
+            <div class="stat"><div class="stat-num" style="color:var(--t2)">648</div><div class="stat-label">真夏日地点数</div></div>
+            <div class="stat"><div class="stat-num" style="color:var(--gold)">2</div><div class="stat-label">酷暑日 突入地点</div></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="spine-heading">
+          <h2 id="spine-heading" style="margin-bottom:.9rem;"><span>観測ヒートスパイン（北→南・本日）</span></h2>
+          <div class="spine" id="spine">
+            <div class="spine-row" data-hot="0" style="--fill-w:52%; --fill-color:var(--t2);">
+              <span class="region">北海道</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">31.2℃</span>
+            </div>
+            <div class="spine-row" data-hot="0" style="--fill-w:58%; --fill-color:var(--t2);">
+              <span class="region">東北</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">33.5℃</span>
+            </div>
+            <div class="spine-row" data-hot="1" style="--fill-w:80%; --fill-color:var(--t3);">
+              <span class="region">関東</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">38.7℃</span>
+            </div>
+            <div class="spine-row" data-hot="1" style="--fill-w:83%; --fill-color:var(--t3);">
+              <span class="region">中部</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">39.1℃</span>
+            </div>
+            <div class="spine-row" data-hot="1" style="--fill-w:74%; --fill-color:var(--t3);">
+              <span class="region">近畿</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">37.9℃</span>
+            </div>
+            <div class="spine-row" data-hot="1" style="--fill-w:68%; --fill-color:var(--t3);">
+              <span class="region">中国</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">36.4℃</span>
+            </div>
+            <div class="spine-row" data-hot="1" style="--fill-w:65%; --fill-color:var(--t3);">
+              <span class="region">四国</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">35.8℃</span>
+            </div>
+            <div class="spine-row" data-hot="0" style="--fill-w:60%; --fill-color:var(--t2);">
+              <span class="region">九州</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">34.9℃</span>
+            </div>
+            <div class="spine-row" data-hot="0" style="--fill-w:54%; --fill-color:var(--t2);">
+              <span class="region">沖縄</span>
+              <div class="spine-track"><div class="spine-fill"></div><div class="spine-dot"></div></div>
+              <span class="val">33.1℃</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RANKING -->
+      <section aria-labelledby="rank-heading">
+        <h2 id="rank-heading"><span>歴代全国ランキング TOP12</span><span class="h2-rule"></span><span class="h2-tag">ALL-TIME MAX</span></h2>
+        <div class="table-scroll">
+          <table id="rankingTable">
+            <thead>
+              <tr>
+                <th>順位</th><th>気温</th><th>地点</th><th>都道府県</th><th>観測日</th><th>区分</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">1</td><td class="temp">41.1℃</td><td class="station">浜松</td><td class="pref">静岡県</td><td class="date">2020-08-17</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">1</td><td class="temp">41.1℃</td><td class="station">熊谷</td><td class="pref">埼玉県</td><td class="date">2018-07-23</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">3</td><td class="temp">41.0℃</td><td class="station">美濃</td><td class="pref">岐阜県</td><td class="date">2018-08-08</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">3</td><td class="temp">41.0℃</td><td class="station">江川崎</td><td class="pref">高知県</td><td class="date">2013-08-12</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">5</td><td class="temp">40.9℃</td><td class="station">金山</td><td class="pref">岐阜県</td><td class="date">2018-08-06</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">5</td><td class="temp">40.9℃</td><td class="station">多治見</td><td class="pref">岐阜県</td><td class="date">2007-08-16</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">7</td><td class="temp">40.8℃</td><td class="station">越谷</td><td class="pref">埼玉県</td><td class="date">2007-08-16</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">8</td><td class="temp">40.7℃</td><td class="station">山形</td><td class="pref">山形県</td><td class="date">1933-07-25</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">9</td><td class="temp">40.6℃</td><td class="station">甲府</td><td class="pref">山梨県</td><td class="date">2013-08-10</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-4" style="--tier-color:var(--t4); --tier-bg:var(--t4-bg);">
+                <td class="rank">9</td><td class="temp">40.6℃</td><td class="station">中条</td><td class="pref">新潟県</td><td class="date">2018-08-23</td>
+                <td class="tier-cell"><span class="badge tier-4">酷暑日</span></td>
+              </tr>
+              <tr class="tier-3" style="--tier-color:var(--t3); --tier-bg:var(--t3-bg);">
+                <td class="rank">11</td><td class="temp">39.9℃</td><td class="station">日田</td><td class="pref">大分県</td><td class="date">2013-08-11</td>
+                <td class="tier-cell"><span class="badge tier-3">猛暑日</span></td>
+              </tr>
+              <tr class="tier-3" style="--tier-color:var(--t3); --tier-bg:var(--t3-bg);">
+                <td class="rank">11</td><td class="temp">39.9℃</td><td class="station">前橋</td><td class="pref">群馬県</td><td class="date">2020-08-11</td>
+                <td class="tier-cell"><span class="badge tier-3">猛暑日</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>※ 本ページはビジュアルデザインのモックアップです。データはすべて架空／再構成の参考値。</span>
+      <span>SOURCE: 気象庁（JMA）公表値を基にした概観 ・ 演出目的</span>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  "use strict";
+  var root = document.documentElement;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce){
+    root.setAttribute('data-motion','reduced');
+    document.querySelectorAll('svg').forEach(function(svg){
+      try{ if(svg.pauseAnimations) svg.pauseAnimations(); }catch(e){}
+    });
+  }
+
+  // ---- film grain (generated once, tiled) ----
+  function makeGrain(){
+    var c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    var ctx = c.getContext('2d');
+    var img = ctx.createImageData(128,128);
+    for(var i=0;i<img.data.length;i+=4){
+      var v = Math.random()*255;
+      img.data[i]=v; img.data[i+1]=v; img.data[i+2]=v;
+      img.data[i+3]= Math.random()*38;
+    }
+    ctx.putImageData(img,0,0);
+    return c.toDataURL();
+  }
+  var grainEl = document.querySelector('.grain');
+  if(grainEl){
+    try{
+      grainEl.style.backgroundImage = 'url(' + makeGrain() + ')';
+    }catch(e){}
+    if(!reduce){
+      var step = 0;
+      setInterval(function(){
+        step = (step+1) % 4;
+        grainEl.style.backgroundPosition = (step*3) + 'px ' + (step*2) + 'px';
+      }, 160);
+    }
+  }
+
+  // ---- scroll-linked warmth ----
+  var ticking = false;
+  function updateHeat(){
+    var maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+    var p = Math.min(window.scrollY / (maxScroll * 0.65), 1);
+    root.style.setProperty('--heat-scroll', p.toFixed(3));
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if(!ticking){ requestAnimationFrame(updateHeat); ticking = true; }
+  }, {passive:true});
+  updateHeat();
+
+  // ---- hero hover / focus intensifies haze + glow ----
+  var hero = document.querySelector('.hero-plaque');
+  if(hero){
+    ['pointerenter','focus'].forEach(function(ev){ hero.addEventListener(ev, function(){ hero.classList.add('is-hot'); }); });
+    ['pointerleave','blur'].forEach(function(ev){ hero.addEventListener(ev, function(){ hero.classList.remove('is-hot'); }); });
+  }
+
+  // ---- reveal on scroll: ranking rows + heat spine ----
+  var revealTargets = [];
+  document.querySelectorAll('#rankingTable tbody tr').forEach(function(el, i){
+    el.classList.add('reveal-target');
+    el.style.transitionDelay = (i * 35) + 'ms';
+    revealTargets.push(el);
+  });
+  document.querySelectorAll('.spine-row').forEach(function(el, i){
+    el.style.transitionDelay = (i * 60) + 'ms';
+    if(el.dataset.hot === '1'){ el.classList.add('hot'); }
+    revealTargets.push(el);
+  });
+
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, {threshold:0.12});
+    revealTargets.forEach(function(el){ io.observe(el); });
+  } else {
+    revealTargets.forEach(function(el){ el.classList.add('is-visible'); });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html xml:lang="ja" lang="ja">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+        <title>気象庁|過去の気象データ・ダウンロード</title>
+        <meta name="Author" content="気象庁 Japan Meteorological Agency" />
+        <meta name="keywords" content="気象庁 Japan Meteorological Agency" />
+        <meta name="description" content="気象庁が提供するページです" />
+        <meta http-equiv="Content-Style-Type" content="text/css" />
+        <meta http-equiv="Content-Script-Type" content="text/javascript" />
+        <link rel="stylesheet" type="text/css" href="/com/css/define.css" media="all" />
+        <style type="text/css" media="all"><!-- @import url(/com/default.css); --></style>
+        <script type="text/javascript">
+            /*@cc_on _d=document;
+             eval('var document=_d');
+             @*/
+        </script>
+        <link href="https://www.data.jma.go.jp/risk/obsdl/web/css/top.2.0.css" rel="stylesheet" type="text/css"><link href="https://www.data.jma.go.jp/risk/obsdl/web/js/slick/slick.grid.css" rel="stylesheet" type="text/css"><link href="https://www.data.jma.go.jp/risk/obsdl/web/js/slick/slick-default-theme.css" rel="stylesheet" type="text/css"><script src="https://www.data.jma.go.jp/risk/obsdl/web/js/jquery-4.0.0.min.js"></script><script src="https://www.data.jma.go.jp/risk/obsdl/web/js/slick/slick.core.js"></script><script src="https://www.data.jma.go.jp/risk/obsdl/web/js/slick/slick.interactions.js"></script><script src="https://www.data.jma.go.jp/risk/obsdl/web/js/slick/slick.grid.js"></script><script src="https://www.data.jma.go.jp/risk/obsdl/web/js/top.2.1.js"></script>    </head>
+    <body>
+        <div id="main-area">
+            <div id="header_area">
+	<div id="nheader">
+		<div id="logo"><a href="//www.jma.go.jp/jma/index.html"><img src="//www.jma.go.jp/jma/com/images/logo.gif" alt="気象庁" width="120" height="67" /></a></div>
+
+                <div id="header2_right">
+                    <div id="header2_link">
+                        <ul>
+                        <li xml:lang="en" lang="en"><a href="//www.jma.go.jp/jma/indexe.html">ENGLISH</a></li>
+                        </ul>
+                    </div>
+                    <!-- search -->　
+                    <div id="gsearch">
+                        <form id="cse-search-box" action="//google.com/cse">
+                        <input type="hidden" name="cx" value="009950868052057056798:0yrbmp7chwi" />
+                        <input type="hidden" name="ie" value="UTF-8" />
+                        <input type="text" name="q" />
+                        <input type="image" name="sa" src="/jma/com/images/btn_search6.png" alt="検索"/>
+                        </form>
+                    <script type="text/javascript" src="//www.google.com/cse/brand?form=cse-search-box&lang=ja"></script>
+                    </div>
+                    <!-- search end -->
+                </div>
+                
+		<ul id="gnavi">
+			<li><a href="//www.jma.go.jp/">ホーム</a></li>
+			<li><a href="//www.jma.go.jp/jma/menu/menuflash.html">防災情報</a></li>
+			<li><a href="//www.jma.go.jp/jma/menu/menureport.html" class="on">各種データ・資料</a></li>
+                        <li><a href="//www.jma.go.jp/jma/menu/areas.html">地域の情報</a></li>
+                        <li><a href="//www.jma.go.jp/jma/menu/menuknowledge.html">知識・解説</a></li>
+                        <li><a href="//www.jma.go.jp/jma/menu/menuappli.html">各種申請・ご案内</a></li>
+		</ul>
+	</div>
+</div>
+<!--header end -->            <div id="contents_area2">
+                 <div id="ncontents2">
+        <!-- pankuzu menu -->
+    <div class="clearfix">
+    <ul class="breadcrumb2">
+        <li><a href="//www.jma.go.jp/">ホーム</a>&nbsp;&gt;&nbsp;</li>
+        <li><a href="//www.jma.go.jp/jma/menu/menureport.html">各種データ・資料</a>&nbsp;&gt;&nbsp;</li>
+        <li>過去の気象データ・ダウンロード</li>
+    </ul>
+    <div id="banner2" class="right">
+        <a href="//www.data.jma.go.jp/risk/"><img src="https://www.data.jma.go.jp/risk/obsdl/web/img/portal_banner.png" alt="">        </a>
+    </div>
+    <div id="banner1" class="right">
+            <div class="clearfix">
+                <span>データ検索関連ページ</span>
+                <a href="//www.data.jma.go.jp/stats/etrn/index.php"><img src="https://www.data.jma.go.jp/risk/obsdl/web/img/kakoBannerThin.gif" alt="">                </a>
+                <a href="//www.data.jma.go.jp/cpd/cgi-bin/view/index.php"><img src="https://www.data.jma.go.jp/risk/obsdl/web/img/kakoChiikiBannerThin.gif" alt="">                </a>
+            </div>
+   </div>
+   </div>
+  <!-- //pankuzu menu -->
+   <div id="main">
+   <div id="top_content">
+    <!--  <noscript><p><span class="must">このページはJavascriptを使用しています</span></p></noscript>  -->
+    <noscript><p><span class="must strong" style="font-size:180%;line-height:1.8em">このページをお使いいただくには、お使いのブラウザでJavaScriptの設定を有効にしてください</span></p></noscript>
+
+
+    <h1 class="clearfix">
+        <span class="left">過去の気象データ・ダウンロード</span>
+
+        <span class="manual2 right">
+            <span id="oshirase">
+                <a href="top/whatsnew">更新履歴</a>
+            </span>
+            <a href="top/help1">このページの使い方</a>
+            <a href="top/faq">よくある質問</a>
+            <a href="top/help3">CSVファイルの形式</a>
+        </span> 
+    </h1>
+    <div id="wrapperTop">
+        <div id="gaugeArea">
+            <div class="clearfix">
+                <div>検索条件</div><div><span id="errMsgArea"></span><span>選択済みのデータ量 </span><span>0% </span><span id="gauge"><span id="gauge1"><span id="percent"></span></span></span><span> 100% (上限)</span></div>
+            </div>
+        </div>
+
+        <div class="clearfix">
+            <div id="leftArea">
+                <div id="mainButton">
+                    <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/main1_1.png" class="rollover empty selectButton" id="stationButton" alt="地点を選ぶ">                    <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/main2_1.png" class="rollover empty selectButton" id="elementButton" alt="項目を選ぶ">                    <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/main3_1.png" class="rollover empty selectButton" id="periodButton" alt="期間を選ぶ">                    <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/main4_1.png" class="rollover selectButton" id="optionButton" alt="表示オプションを選ぶ">                </div>
+                <div id="panelArea">
+                    <div id="stationArea" class="selectPanel"></div>
+                    <div id="elementArea" class="selectPanel"></div>
+                    <div id="periodArea"  class="selectPanel"></div>
+                    <div id="optionArea"  class="selectPanel">
+
+                        <div class="top_select" id="selectOp">
+                            <p class="clearfix"><span class="manual right"><a href="https://www.data.jma.go.jp/risk/obsdl/top/help1#option_select">表示オプションの使い方</a></span></p>
+                            <h2>利用上注意が必要なデータの扱い</h2>
+                            <div><p>統計値を求める際、統計のもととなる資料に大幅な(必要な資料の20%を超える)欠損があるため</p>
+                                <p class="uline">利用上注意が必要なデータは</p>
+                                <div>
+                                    <div><p><label onclick=""><input type="radio" value="1" name="rmkFlag" checked="checked" /><span>値を表示(格納)する。ただし利用上注意が必要なことを示す情報をつける。</span></label></p></div>
+                                    <div><p><label onclick=""><input type="radio" value="0" name="rmkFlag" /><span>値を表示(格納)しない。</span></label></p></div>
+                                </div>
+                            </div>
+                            <h2>観測環境などの変化の前後で、値が不均質となったデータの扱い</h2>
+                            <div><p>観測場所の移転、環境の変化、観測方法の変更などにより、その前後で値が不均質となった場合、</p><p class="uline"></p>
+                                <div>
+                                    <div><p><label onclick=""><input type="radio" value="1" name="disconnectFlag" checked="checked" /><span>観測環境などの変化にかかわらず、すべての期間の値を表示(格納)する。ただしデータの不均質を示す情報をつける。 </span></label></p></div>
+                                    <div><p><label onclick=""><input type="radio" value="0" name="disconnectFlag" /><span>観測環境などの変化前の値を表示(格納)しない。</span></label></p></div>
+                                </div>
+                            </div> 
+                            <h2>ダウンロードCSVファイルのデータ仕様</h2><div>
+                                <p><label onclick=""><input type="radio" value="1" name="csvFlag" checked="checked" /><span>すべて数値で格納(現象あり・なし情報、品質情報は数値で格納)</span></label></p>
+                                <p class="marginleft">日付の形式　
+                                    <input type="radio" value="1" name="ymdLiteral" id="リテラル" checked="checked" /><span><label onclick="" for="リテラル">日付リテラルで格納</label></span>
+                                    <input type="radio" value="0" name="ymdLiteral" id="年月日" /><span><label onclick="" for="年月日">年月日などに分けて格納</label></span>
+                                </p>
+                                <p><label onclick=""><input type="radio" value="0" name="csvFlag" /><span>データ表示画面と同様に、数値以外の記号を含む</span></label></p>
+                            </div>
+                            <h2>その他</h2><div>
+                                <div>
+                                                                        <div><label onclick=""><input type="checkbox" name="youbiFlag" /><span>日付に曜日を表示（日別値選択時）</span></label></div>
+                                    <div><label onclick=""><input type="checkbox" name="fukenFlag" /><span>都道府県名を格納（CSVファイルダウンロード実行時）</span></label></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="whatsnew" style="font-size:0.86em;">
+                    <!--推奨ブラウザ-->
+
+                    <h3 class="recommend">推奨ブラウザ : Microsoft Edge(最新版), Mozilla Firefox(最新版), Google Chrome(最新版)</h3>
+
+                    <h2>ご利用にあたっての注意事項</h2>
+                    <ul>
+                        <li><p>一回にリクエストできるデータ量には上限があります（コンテンツ右上棒グラフ参照）。</p></li>
+                        <li><p>アクセス集中時や一回のデータ量が多い場合、繋がらないことやデータ取得に時間がかかることがあります。繋がらない場合は時間をおいて再度お試しください。</p></li>
+                        <li><p>アクセス集中の原因となりますので、自動化ツール等による過度のアクセスはお控えいただくようお願いいたします。</p></li>
+                    </ul><br/>
+
+                    <h2>新着情報</h2>
+                    <ul>
+                        <li><p>気象官署の風向風速計及び日照計の移設に伴い、平年値の一部を更新しました。詳細は<a href="https://www.data.jma.go.jp/suishin/oshirase/pdf/20250325.pdf">配信資料に関するお知らせ（PDF形式：124KB）</a>をご覧ください。（2025.5.21）</p></li>
+                        <li><p>本ページの運用を再開しました。システム更新に伴うメンテナンス対応のため、2025年2月20日（木）より運用を休止しておりました。休止中にご不便をおかけしましたことをお詫びいたします。(2025.4.21)</p></li>
+                    </ul>
+                    <ul class="pagelink"><li><a href="https://www.data.jma.go.jp/risk/obsdl/top/whatsnew">更新履歴</a></li></ul><br/>
+                    <h2>データ修正のお知らせ</h2>
+                    <ul>
+                        <li><p>アメダスの郡家観測所（兵庫県）において、湿度計の不具合により、2026年1月1日から2026年4月13日までの湿度データを欠測としました。（2026.7.22）</p></li>
+                        <li><p>アメダスの高野観測所（広島県）において、湿度計の不具合により、2026年3月1日から2026年4月22日までの湿度データを欠測としました。（2026.7.22）</p></li>
+                        <li><p>アメダスの松島観測所（熊本県）における2025年8月11日の観測データを精査し、降水量の値を修正しました。（2025.8.20）</p></li>
+                    </ul>
+
+                    <ul class="pagelink"><li><a href="https://www.data.jma.go.jp/risk/obsdl/top/caution">データ修正の過去のお知らせ</a></li></ul>
+		    <ul><p>※ 掲載している気象データは、過去にさかのぼって修正する場合があります。 ご利用の際には、最新の掲載データをご確認ください。 なお、主な修正については、データ修正のお知らせに掲載します。</p></ul>
+                </div>
+
+                <div id="leftPanelButton">
+                    <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/set_back_1.png" class="rollover" alt="左パネル">                </div>
+                <div id="rightPanelButton">  <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/set_next_1.png" class="rollover" alt="右パネル">                </div>
+            </div>
+
+            <div id="rightArea"><div><div>
+                                                <div id="loadbutton">
+                            <div>
+                                <span id ="loadTable">
+                                    <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/view_large_1.png" class="rollover" alt="">                                </span></div> 
+                            <div> <span id="csvdl">
+                                    <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/download_large_1.png" class="rollover" alt="">                                </span></div>
+                        </div>
+                        <input type="submit" id="buttonDelAll" value="選択地点・項目をクリア" />
+                        <div class="clearfix" id="selectedStTitle"><p class="selectedAreaSubTitle selectedStText s">選択された地点</p><p class="s">観測項目</p></div>
+                        <div id="selectedStationArea">
+                            <div id="selectedStationList" class="list-selected">未選択</div></div>
+                        <div id="selectedElementArea">
+                            <p class="s"><span class="selectedAreaSubTitle">選択された項目</span></p><div class="list-selected">
+                                <div id="selectedElementList">未選択</div>
+                                <div id="selectedElopList"></div>
+                            </div></div>
+
+																	 <p class="s"><span class="selectedAreaSubTitle">選択された期間（日本標準時）</span></p><div id="selectedPeriod"></div>
+                        <p class="s"><span class="selectedAreaSubTitle">選択されたオプション</span></p><div id="selectedViewOption"></div>
+                    </div></div>
+                <span class="manual">
+                    <a href="https://www.data.jma.go.jp/risk/obsdl/top/attention">ご利用にあたっての注意点</a>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="table_content">
+    <h1>検索結果
+        <span class="manual2">
+            <a href="top/help4#data_hyouki" target="_blank">データの表記と意味</a>
+            <a href="top/help3" target="_blank">CSVファイルの形式</a>
+        </span>
+    </h1>
+    <div class="clearfix">
+        <div class="tablebutton">
+            <span id="loadTop">
+                <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/return_to_menu_1.png" class="rollover" alt="">            </span>
+        </div>
+
+        <div id="csvdl" class="tablebutton">
+            <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/download_small_1.png" class="rollover" alt="">    </div>
+    </div>
+       <div id="data1" class="data2_s"></div>
+</div>
+   </div>
+<p class="totop"><a href="#nheader">このページのトップへ</a></p>
+</div>
+
+
+<!-- Wait dialog (outside hidden container for visibility) -->
+<div id="wait" style="display:none">
+    <p><span>しばらくお待ちください</span>
+        <img src="https://www.data.jma.go.jp/risk/obsdl/web/img/loading.gif" alt="wait" width="20" height="20"></p>
+    <p class="s">※選択した要素によっては数分かかることもあります</p>
+    <p><input type="submit" name="calcelajax" value="キャンセル" /></p>
+</div>
+
+<div style = "display:none">
+    <div id = "areaDialog">
+    </div>
+    <div id="periodcopy"></div>
+</div>
+            </div>
+            <div id="footer_area">
+	<div id="nfooter">
+                        <ul>
+            <li><a href="//www.jma.go.jp/jma/kishou/info/coment.html">気象庁ホームページについて</a></li>
+                        </ul>
+	</div>
+</div>
+        </div>
+    </body>
+</html>
