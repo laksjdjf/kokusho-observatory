@@ -3,6 +3,8 @@
 # 派生JSON・SQLite はビルド時に生成する使い捨て成果物。
 data/
 web/public/data/
+# Parquetはビルド時に data/parquet/ から public/ へコピーされる生成物
+web/public/*.parquet
 
 # Node
 node_modules/
