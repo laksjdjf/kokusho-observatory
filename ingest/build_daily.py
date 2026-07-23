@@ -48,6 +48,14 @@ CREATE TABLE stations (
   -- 毎回154年ぶんを問い合わせるのは無駄なので記録して以後スキップする。
   temp_unavailable INTEGER NOT NULL DEFAULT 0
 );
+-- どの地点のどの窓まで取り込めたかの記録。504等で中断しても
+-- 再開時に取得済みの窓をやり直さずに済む。
+CREATE TABLE IF NOT EXISTS fetch_log (
+  jma_code     TEXT NOT NULL,
+  window_start TEXT NOT NULL,
+  rows         INTEGER NOT NULL,
+  PRIMARY KEY (jma_code, window_start)
+);
 CREATE TABLE daily_max (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   station_id    INTEGER NOT NULL REFERENCES stations(id),
@@ -117,32 +125,120 @@ def resolve_end_date(mode: str = "auto") -> date:
     return datetime.now(JST).date() - timedelta(days=1)
 
 
-CELL_LIMIT = 40000       # obsdlの 44000 制限に対する安全マージン
-MAX_BATCH_STATIONS = 80  # 1リクエストの応答サイズを抑えるための上限
+# obsdl の上限は 44000 セルだが、全地点が稼働している年代でその上限近くを
+# 要求すると気象庁側が 504 Gateway Timeout を返す（実測）。向こうの処理が
+# 間に合わないということなので、1リクエストのセル数を大幅に絞る。
+CELL_BUDGET = 14400      # 地点数 × 日数 の上限（実測で安定する水準）
+MAX_BATCH_STATIONS = 16
+WINDOW_DAYS = 900        # 長期間はこの幅の窓に切ってから地点をまとめる
+RETRIES = 3
 
 
-def fetch_batch(stids: list[str], start: date, end: date) -> dict[str, list[dict]]:
-    """複数地点を1リクエストでまとめ取りする（差分取込用）。
-
-    地点ごとに1リクエスト投げると166地点で約250秒かかるうえ気象庁にも負荷が高い。
-    差分は十数日ぶんなので、地点数×日数が制限に収まる範囲でまとめる。
-    """
-    days = (end - start).days + 1
-    per_req = max(1, min(MAX_BATCH_STATIONS, CELL_LIMIT // max(days, 1)))
-    out: dict[str, list[dict]] = {}
-    for i in range(0, len(stids), per_req):
-        chunk = stids[i:i + per_req]
+def _fetch_chunk(stids: list[str], start: date, end: date) -> dict[str, list[dict]] | None:
+    """1リクエスト分。504等は指数バックオフで再試行し、駄目なら None を返す。"""
+    for attempt in range(RETRIES):
         try:
-            csv_text = obsdl.fetch_csv_multi(_fresh_session(), chunk, start, end)
+            csv_text = obsdl.fetch_csv_multi(_fresh_session(), stids, start, end)
+            if csv_text.lstrip().startswith("<!DOCTYPE"):
+                raise requests.RequestException("エラーページ応答")
+            return obsdl.parse_daily_max_csv_multi(csv_text, stids)
         except requests.RequestException as e:
-            print(f"    [warn] batch {i}: {e}", file=sys.stderr)
-            continue
-        if csv_text.lstrip().startswith("<!DOCTYPE"):
-            print(f"    [warn] batch {i}: エラーページ応答", file=sys.stderr)
-            continue
-        out.update(obsdl.parse_daily_max_csv_multi(csv_text, chunk))
-        time.sleep(0.5)
-    return out
+            wait = 5 * (attempt + 1) ** 2
+            if attempt == RETRIES - 1:
+                print(f"    [warn] {start}〜{end} {len(stids)}地点 断念: {e}", file=sys.stderr)
+                return None
+            print(f"    [retry] {start} {e} — {wait}秒待機", file=sys.stderr)
+            time.sleep(wait)
+    return None
+
+
+def _fetch_adaptive(stids: list[str], start: date, end: date, depth: int = 0):
+    """504で失敗したら「地点を半分」→「期間を半分」と分割して取り直す。
+
+    待つだけのリトライでは、相手が捌けない大きさのクエリは何度投げても通らない。
+    2021年以降のように全地点が密に稼働している時期は要求が重くなるので、
+    通る大きさになるまで自動的に小さくする。
+    """
+    parsed = _fetch_chunk(stids, start, end)
+    if parsed is not None:
+        return parsed
+    if len(stids) > 1:                       # まず地点を分割
+        mid = len(stids) // 2
+        a = _fetch_adaptive(stids[:mid], start, end, depth + 1)
+        b = _fetch_adaptive(stids[mid:], start, end, depth + 1)
+        return {**(a or {}), **(b or {})}
+    span = (end - start).days + 1
+    if span > 120:                           # 1地点でも駄目なら期間を分割
+        mid = start + timedelta(days=span // 2)
+        a = _fetch_adaptive(stids, start, mid, depth + 1)
+        b = _fetch_adaptive(stids, mid + timedelta(days=1), end, depth + 1)
+        merged: dict[str, list[dict]] = {}
+        for part in (a, b):
+            for k, v in (part or {}).items():
+                merged.setdefault(k, []).extend(v)
+        return merged
+    print(f"    [give-up] {stids} {start}〜{end}", file=sys.stderr)
+    return None
+
+
+def fetch_windowed(stids: list[str], start: date, end: date, sink) -> int:
+    """地点×期間を「セル予算に収まる窓＋バッチ」に分割して取得する。
+
+    取得できた分はその都度 sink(stid, rows, window_start) に渡して確定させる
+    （途中で中断しても進捗が残り、再開時にやり直さずに済む）。
+    """
+    total_days = (end - start).days + 1
+    window = WINDOW_DAYS if total_days > WINDOW_DAYS else total_days
+    per_req = max(1, min(MAX_BATCH_STATIONS, CELL_BUDGET // max(window, 1)))
+    windows = list(date_chunks(start, end, window))
+    batches = [stids[i:i + per_req] for i in range(0, len(stids), per_req)]
+    print(f"[daily] {len(stids)}地点 × {start}〜{end} を "
+          f"{len(windows)}窓 × {len(batches)}バッチ = {len(windows) * len(batches)}リクエスト",
+          file=sys.stderr)
+    got = 0
+    for wi, (ws, we) in enumerate(windows, 1):
+        for chunk in batches:
+            pending = [s for s in chunk if not sink.done(s, ws)]
+            if not pending:
+                continue
+            parsed = _fetch_adaptive(pending, ws, we)
+            if not parsed:
+                continue
+            for stid, rows in parsed.items():
+                got += sink.put(stid, rows, ws)
+            # 相手は人間がCSVを落とすための公共サービスであって、こちらが
+            # 急ぐ理由は無い。初回バックフィルは間隔を広めに取る。
+            time.sleep(2.0)
+        print(f"    窓{wi}/{len(windows)} {ws}〜{we} 完了 (累計 {got:,}行)", file=sys.stderr)
+    return got
+
+
+class Sink:
+    """取得結果をDBへ流し込みつつ、窓ごとの完了を記録する。"""
+
+    def __init__(self, con: sqlite3.Connection, ids: dict[str, int]):
+        self.con, self.ids = con, ids
+        self.seen = {(r[0], r[1]) for r in con.execute(
+            "SELECT jma_code, window_start FROM fetch_log")}
+
+    def done(self, stid: str, window_start: date) -> bool:
+        return (stid, window_start.isoformat()) in self.seen
+
+    def put(self, stid: str, rows: list[dict], window_start: date) -> int:
+        if rows:
+            self.con.executemany(
+                "INSERT INTO daily_max (station_id,date,max_temp,max_temp_time,quality_flag)"
+                " VALUES (?,?,?,?,?)"
+                " ON CONFLICT(station_id,date) DO UPDATE SET"
+                "  max_temp=excluded.max_temp, quality_flag=excluded.quality_flag",
+                [(self.ids[stid], r["date"], r["max_temp"], r["max_temp_time"],
+                  r["quality_flag"]) for r in rows])
+        key = (stid, window_start.isoformat())
+        self.con.execute("INSERT OR REPLACE INTO fetch_log VALUES (?,?,?)",
+                         (stid, key[1], len(rows)))
+        self.seen.add(key)
+        self.con.commit()
+        return len(rows)
 
 
 def open_db() -> sqlite3.Connection:
@@ -155,6 +251,9 @@ def open_db() -> sqlite3.Connection:
             con.execute(idx)
         con.commit()
     else:
+        con.execute("CREATE TABLE IF NOT EXISTS fetch_log ("
+                    " jma_code TEXT NOT NULL, window_start TEXT NOT NULL,"
+                    " rows INTEGER NOT NULL, PRIMARY KEY (jma_code, window_start))")
         cols = {r[1] for r in con.execute("PRAGMA table_info(stations)")}
         for name, ddl in (("temp_unavailable", "INTEGER NOT NULL DEFAULT 0"),
                           ("amedastable_code", "TEXT")):
@@ -217,61 +316,46 @@ def main() -> None:
         r[0]: r[1] for r in con.execute("SELECT station_id, MAX(date) FROM daily_max GROUP BY station_id")
     }
 
-    UPSERT = (
-        "INSERT INTO daily_max (station_id,date,max_temp,max_temp_time,quality_flag)"
-        " VALUES (?,?,?,?,?)"
-        " ON CONFLICT(station_id,date) DO UPDATE SET"
-        "  max_temp=excluded.max_temp, quality_flag=excluded.quality_flag"
-    )
+    sink = Sink(con, stid_to_id)
 
-    # 起点日ごとに束ねる。既存地点はほぼ同じ起点になるので1〜2リクエストで済む。
     # 気温が取れないと判明済みの地点（雨量のみ等）は再挑戦しない
     no_temp = {r[0] for r in con.execute(
         "SELECT jma_code FROM stations WHERE temp_unavailable=1")}
 
+    # 起点日ごとに束ねる。既存地点はほぼ同じ起点になるので少数のグループで済む。
     groups: dict[date, list[str]] = {}
-    backfill: list[str] = []
     skipped = 0
-    for s in stations:
-        stid = s["jma_code"]
+    for st in stations:
+        stid = st["jma_code"]
         if stid in no_temp:
             skipped += 1
             continue
         last = have.get(stid_to_id[stid])
-        if not last:
-            backfill.append(stid)          # 新規地点は全期間（重いので個別に取る）
-            continue
-        start = date.fromisoformat(last) - timedelta(days=OVERLAP_DAYS)
-        if start > end:
+        if last:
+            start_d = date.fromisoformat(last) - timedelta(days=OVERLAP_DAYS)
+        else:
+            # 新規地点。アメダスは1976年開始なので手前は問い合わせない。
+            start_d = date(1976, 1, 1) if stid.startswith("a") else HISTORY_START
+        if start_d > end:
             skipped += 1
             continue
-        groups.setdefault(start, []).append(stid)
+        groups.setdefault(start_d, []).append(stid)
 
     added = 0
-    for start, stids in sorted(groups.items()):
-        days = (end - start).days + 1
-        print(f"[daily] 差分 {start}〜{end} ({days}日) × {len(stids)}地点 をまとめ取得 …",
-              file=sys.stderr, end="", flush=True)
-        got = fetch_batch(stids, start, end)
-        for stid, rows in got.items():
-            con.executemany(UPSERT, [(stid_to_id[stid], r["date"], r["max_temp"],
-                                      r["max_temp_time"], r["quality_flag"]) for r in rows])
-            added += len(rows)
-        con.commit()
-        print(f" {sum(len(v) for v in got.values()):,}行", file=sys.stderr)
+    for start_d, stids in sorted(groups.items()):
+        added += fetch_windowed(stids, start_d, end, sink)
 
-    for i, stid in enumerate(backfill):
-        print(f"[daily] 新規地点 ({i+1}/{len(backfill)}) {stid} 全期間 …",
-              file=sys.stderr, end="", flush=True)
-        rows = fetch_station_history(stid, end, HISTORY_START)
-        con.executemany(UPSERT, [(stid_to_id[stid], r["date"], r["max_temp"],
-                                  r["max_temp_time"], r["quality_flag"]) for r in rows])
-        if not rows:
-            # 全期間問い合わせて0行 = 気温を観測していない地点。以後スキップする。
-            con.execute("UPDATE stations SET temp_unavailable=1 WHERE jma_code=?", (stid,))
-        con.commit()
-        added += len(rows)
-        print(f" {len(rows):,}行{'（気温なしと記録）' if not rows else ''}", file=sys.stderr)
+    # 全期間問い合わせて0行だった地点は気温を観測していない。以後スキップ。
+    dead = [r[0] for r in con.execute(
+        "SELECT s.jma_code FROM stations s"
+        " WHERE s.temp_unavailable=0"
+        "   AND NOT EXISTS (SELECT 1 FROM daily_max d WHERE d.station_id=s.id)"
+        "   AND EXISTS (SELECT 1 FROM fetch_log f WHERE f.jma_code=s.jma_code)")]
+    for stid in dead:
+        con.execute("UPDATE stations SET temp_unavailable=1 WHERE jma_code=?", (stid,))
+    con.commit()
+    if dead:
+        print(f"[daily] 気温が取れなかった {len(dead)}地点を以後スキップ対象に記録", file=sys.stderr)
 
     refresh_obs_start(con)
     con.execute("ANALYZE")

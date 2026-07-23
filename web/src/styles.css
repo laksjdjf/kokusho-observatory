@@ -291,6 +291,9 @@ th.sortable.active{ color:var(--t3); }
 .japan-map{ display:block; width:100%; height:auto; max-height:82vh; cursor:grab; touch-action:none; }
 .japan-map.grabbing{ cursor:grabbing; }
 .dot{ cursor:pointer; }
+.temp-label{ text-anchor:middle; font-family:var(--font-mono); font-weight:800;
+  paint-order:stroke; stroke:rgba(4,2,2,.92); stroke-width:3.5px; pointer-events:none;
+  letter-spacing:-.02em; }
 .dot-label{ fill:var(--ink); text-anchor:middle; font-family:var(--font-formal); paint-order:stroke; stroke:rgba(6,4,3,.9); stroke-width:3px; pointer-events:none; }
 .zoom-ctrl{ position:absolute; top:.8rem; right:.8rem; display:flex; flex-direction:column; gap:.3rem; }
 .zoom-ctrl button{ width:2rem; height:2rem; background:rgba(8,5,5,.85); border:1px solid var(--line-strong); color:var(--ink-dim); font-size:1rem; cursor:pointer; line-height:1; }

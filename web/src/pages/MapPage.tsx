@@ -142,6 +142,34 @@ export default function MapPage() {
 
   const radius = (t: Tier) => (t === 4 ? 7 : t === 3 ? 5.5 : t === 2 ? 4 : 3)
 
+  // 気温を数値で出す。900地点ぶん一度に描くと重なって潰れるので、
+  // 暑い順に「まだ空いている場所」だけへ置いていく（グリッドで衝突判定）。
+  // ズームすると判定マスが細かくなり自然に数字が増える。一番暑い地点は常に出る。
+  const labeled = useMemo(() => {
+    const cw = 34 / view.k, ch = 16 / view.k   // 数値ラベル1つ分の占有サイズ
+    // セルに置いた位置を持ち、近傍セルまで見て実距離で衝突判定する
+    // （マス単位だけで見ると隣のマスのラベルと重なる）
+    const cells = new Map<string, { x: number; y: number }[]>()
+    const out = new Set<string>()
+    for (const p of [...plots].sort((a, b) => b.temp - a.temp)) {
+      const cx = Math.floor(p.x / cw), cy = Math.floor(p.y / ch)
+      let hit = false
+      for (let i = -1; i <= 1 && !hit; i++) {
+        for (let j = -1; j <= 1 && !hit; j++) {
+          for (const q of cells.get(`${cx + i},${cy + j}`) ?? []) {
+            if (Math.abs(q.x - p.x) < cw && Math.abs(q.y - p.y) < ch) { hit = true; break }
+          }
+        }
+      }
+      if (hit) continue
+      const key = `${cx},${cy}`
+      const arr = cells.get(key)
+      if (arr) arr.push(p); else cells.set(key, [p])
+      out.add(p.code)
+    }
+    return out
+  }, [plots, view.k])
+
   return (
     <div className="page-wrap">
       <div className="page-head">
@@ -173,15 +201,26 @@ export default function MapPage() {
                     onClick={clickIfNotDragged(() => nav(`/station/${p.code}`))}>
                     <title>{p.pref} {p.name} {p.temp.toFixed(1)}℃</title>
                     {p.tier >= 3 && (
-                      <circle cx={p.x} cy={p.y} r={(radius(p.tier) * 2.1) / view.k}
-                        fill={`var(--t${p.tier})`} opacity={p.tier === 4 ? 0.28 : 0.16} />
+                      <circle cx={p.x} cy={p.y} r={(radius(p.tier) * 1.6) / view.k}
+                        fill={`var(--t${p.tier})`} opacity={p.tier === 4 ? 0.3 : 0.16} />
                     )}
-                    <circle cx={p.x} cy={p.y} r={radius(p.tier) / view.k} fill={`var(--t${p.tier})`}
-                      filter={p.tier >= 3 ? 'url(#dotGlow)' : undefined}
-                      stroke={hover?.code === p.code ? 'var(--ink)' : 'none'} strokeWidth={1.5 / view.k} />
-                    {view.k >= 3.2 && (
-                      <text x={p.x} y={p.y - (radius(p.tier) + 4) / view.k} className="dot-label"
-                        style={{ fontSize: `${11 / view.k}px` }}>{p.name}</text>
+                    {labeled.has(p.code) ? (
+                      <>
+                        <text x={p.x} y={p.y + 4 / view.k} className="temp-label"
+                          style={{ fontSize: `${13 / view.k}px`, fill: `var(--t${p.tier})` }}>
+                          {p.temp.toFixed(1)}
+                        </text>
+                        {view.k >= 3.2 && (
+                          <text x={p.x} y={p.y - 9 / view.k} className="dot-label"
+                            style={{ fontSize: `${10 / view.k}px` }}>{p.name}</text>
+                        )}
+                      </>
+                    ) : (
+                      <circle cx={p.x} cy={p.y} r={2.2 / view.k} fill={`var(--t${p.tier})`} opacity={0.85} />
+                    )}
+                    {hover?.code === p.code && (
+                      <circle cx={p.x} cy={p.y} r={9 / view.k} fill="none"
+                        stroke="var(--ink)" strokeWidth={1.5 / view.k} />
                     )}
                   </g>
                 ))}

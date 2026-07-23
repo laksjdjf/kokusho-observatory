@@ -1,24 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { NationalRanking } from '../types'
 import { useJson, Badge, StationLink, DateLink, tierRowStyle, tierFor } from '../lib'
-import { query, DAILY, STATIONS } from '../db'
+import { query, STATIONS } from '../db'
+import { RANKINGS } from '../rankings'
+import type { ColumnDef, RankingDef, RankingRow } from '../rankings'
 
-/** Parquetへ直接SQLを投げる。新しい切り口は「SQLを1本書く」だけで足りる。 */
-function useQuery<T>(sql: string) {
+/** Parquetへ直接SQLを投げる。新しい切り口は rankings.ts に「SQLを1本書く」だけで足りる。 */
+function useQuery<T>(sql: string | null) {
   const [rows, setRows] = useState<T[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
   useEffect(() => {
+    if (!sql) { setRows(null); setErr(null); return }
     setRows(null); setErr(null)
     query<T>(sql).then(setRows).catch((e) => setErr(String(e)))
   }, [sql])
   return { rows, err }
 }
-
-interface NicheRow { jma_code: string; name: string; pref: string; mousho: number; kokusho: number; longest: number; record_high: number }
-interface HotDayRow { date: string; max: number; mousho: number; kokusho: number; top_name: string; top_pref: string }
-
-type Tab = 'alltime' | 'niche' | 'hotdays'
 
 function AllTime({ ranking, codeOf }: { ranking: NationalRanking; codeOf: (n: string, p: string) => string | undefined }) {
   return (
@@ -45,101 +44,73 @@ function AllTime({ ranking, codeOf }: { ranking: NationalRanking; codeOf: (n: st
   )
 }
 
-const SQL_NICHE = `
-  WITH agg AS (
-    SELECT station_id,
-           COUNT(*) FILTER (WHERE max_temp >= 35) AS mousho,
-           COUNT(*) FILTER (WHERE max_temp >= 40) AS kokusho,
-           MAX(max_temp) AS record_high
-    FROM ${DAILY} GROUP BY station_id
-  ),
-  -- 連続猛暑日: 日付から連番を引くと連続区間が同じ値になる（島ID法）
-  hot AS (
-    SELECT station_id,
-           date - CAST(row_number() OVER (PARTITION BY station_id ORDER BY date) AS INTEGER) AS grp
-    FROM ${DAILY} WHERE max_temp >= 35
-  ),
-  streak AS (
-    SELECT station_id, MAX(len) AS longest FROM (
-      SELECT station_id, grp, COUNT(*) AS len FROM hot GROUP BY station_id, grp
-    ) GROUP BY station_id
-  )
-  SELECT s.jma_code, s.name, s.pref,
-         a.mousho, a.kokusho, a.record_high,
-         COALESCE(st.longest, 0) AS longest
-  FROM agg a
-  JOIN ${STATIONS} s ON s.id = a.station_id
-  LEFT JOIN streak st ON st.station_id = a.station_id
-  ORDER BY a.mousho DESC`
+/** 列種別ごとの td クラス。styles.css の既存クラスに合わせる。 */
+function cellClass(c: ColumnDef, r: RankingRow): string {
+  switch (c.kind) {
+    case 'rank': return 'rank'
+    case 'station': return 'station'
+    case 'pref': return 'pref'
+    case 'date': return 'date'
+    case 'temp': return 'temp'
+    case 'int': {
+      let cls = 'num-cell'
+      if (c.tone === 'hot') cls += ' hot'
+      if (c.tone === 'kokusho' && Number(r[c.key] ?? 0) > 0) cls += ' kokusho'
+      return cls
+    }
+    default: return ''
+  }
+}
 
-function Niche() {
-  const { rows: niche, err } = useQuery<NicheRow>(SQL_NICHE)
-  if (err) return <p className="state">集計に失敗しました: {err}</p>
-  if (!niche) return <p className="state">集計中…（初回はDBの起動に数秒かかります）</p>
+/** 列種別ごとの表示内容。BigIntで返ってくる集計値はNumber()で吸収する。 */
+function renderCell(c: ColumnDef, r: RankingRow, i: number): ReactNode {
+  const v = r[c.key]
+  switch (c.kind) {
+    case 'rank':
+      return i + 1
+    case 'station':
+      return <StationLink code={r[c.codeKey ?? 'jma_code'] as string | undefined}>{String(v ?? '—')}</StationLink>
+    case 'pref':
+      return v == null ? '—' : String(v)
+    case 'date':
+      return <DateLink date={v as string | null} />
+    case 'temp':
+      return v == null ? '—' : `${Number(v).toFixed(1)}℃`
+    case 'int':
+      return v == null ? '—' : `${Number(v).toLocaleString()}${c.suffix ?? ''}`
+    case 'text':
+    default:
+      return v === null || v === undefined || v === '' ? '—' : `${v}${c.suffix ?? ''}`
+  }
+}
+
+function RankingTable({ def, rows }: { def: RankingDef; rows: RankingRow[] }) {
+  const tempCol = useMemo(() => def.columns.find((c) => c.kind === 'temp'), [def])
   return (
     <div className="table-scroll">
       <table>
-        <thead><tr><th>順位</th><th>地点</th><th>都道府県</th><th>猛暑日 ≥35</th><th>酷暑日 ≥40</th><th>最長連続</th><th>最高</th></tr></thead>
+        <thead><tr>{def.columns.map((c) => <th key={c.header}>{c.header}</th>)}</tr></thead>
         <tbody>
-          {niche.map((r, i) => (
-            <tr key={r.jma_code}>
-              <td className="rank">{i + 1}</td>
-              <td className="station"><StationLink code={r.jma_code}>{r.name}</StationLink></td>
-              <td className="pref">{r.pref}</td>
-              <td className="num-cell hot">{Number(r.mousho).toLocaleString()}</td>
-              <td className={`num-cell${Number(r.kokusho) ? ' kokusho' : ''}`}>{Number(r.kokusho)}</td>
-              <td className="num-cell">{Number(r.longest)}日</td>
-              <td className="num-cell">{r.record_high.toFixed(1)}℃</td>
-            </tr>
-          ))}
+          {rows.map((r, i) => {
+            const tier = tempCol ? tierFor(Number(tempCol && r[tempCol.key])) : undefined
+            const key = def.rowKey ? def.rowKey(r, i) : i
+            return (
+              <tr key={key} className={tier !== undefined ? `tier-${tier}` : undefined} style={tier !== undefined ? tierRowStyle(tier) : undefined}>
+                {def.columns.map((c) => <td key={c.header} className={cellClass(c, r)}>{renderCell(c, r, i)}</td>)}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
   )
 }
 
-const SQL_HOTDAYS = `
-  WITH per_day AS (
-    SELECT d.date,
-           MAX(d.max_temp) AS max,
-           COUNT(*) FILTER (WHERE d.max_temp >= 35) AS mousho,
-           COUNT(*) FILTER (WHERE d.max_temp >= 40) AS kokusho,
-           arg_max(s.name, d.max_temp) AS top_name,
-           arg_max(s.pref, d.max_temp) AS top_pref
-    FROM ${DAILY} d JOIN ${STATIONS} s ON s.id = d.station_id
-    GROUP BY d.date
-  )
-  SELECT strftime(date, '%Y-%m-%d') AS date, max, mousho, kokusho, top_name, top_pref
-  FROM per_day ORDER BY max DESC LIMIT 150`
-
-function HotDays() {
-  const { rows, err } = useQuery<HotDayRow>(SQL_HOTDAYS)
-  if (err) return <p className="state">集計に失敗しました: {err}</p>
-  if (!rows) return <p className="state">集計中…（初回はDBの起動に数秒かかります）</p>
-  return (
-    <div className="table-scroll">
-      <table>
-        <thead><tr><th>順位</th><th>日付</th><th>全国最高</th><th>最高地点</th><th>猛暑日 地点数</th><th>酷暑日 地点数</th></tr></thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={r.date} className={`tier-${tierFor(r.max)}`} style={tierRowStyle(tierFor(r.max))}>
-              <td className="rank">{i + 1}</td>
-              <td className="date"><DateLink date={r.date} /></td>
-              <td className="temp">{Number(r.max).toFixed(1)}℃</td>
-              <td className="station">{r.top_pref} {r.top_name}</td>
-              <td className="num-cell hot">{Number(r.mousho)}</td>
-              <td className={`num-cell${Number(r.kokusho) ? ' kokusho' : ''}`}>{Number(r.kokusho)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
+type TabId = 'alltime' | string
 
 export default function Rankings() {
   const { data: ranking } = useJson<NationalRanking>('data/national_all_time.json')
-  const [tab, setTab] = useState<Tab>('alltime')
+  const [tab, setTab] = useState<TabId>('alltime')
   const nav = useNavigate()
 
   // 歴代ランキング(rankall由来)には地点コードが無いので、地点マスタから引く
@@ -151,13 +122,17 @@ export default function Rankings() {
     return (name: string, pref: string) => m.get(`${name}|${pref.replace(/[都道府県]$/, '')}`)
   }, [stationIdx])
 
+  const activeDef = RANKINGS.find((d) => d.id === tab)
+  const { rows, err } = useQuery<RankingRow>(activeDef?.sql ?? null)
+
   return (
     <div className="page-wrap">
       <h1 className="page-title">ランキング</h1>
       <div className="tabs" role="tablist">
-        <button className="tab" role="tab" aria-selected={tab === 'alltime'} onClick={() => setTab('alltime')}>歴代全国 最高気温</button>
-        <button className="tab" role="tab" aria-selected={tab === 'niche'} onClick={() => setTab('niche')}>歴代 猛暑日回数</button>
-        <button className="tab" role="tab" aria-selected={tab === 'hotdays'} onClick={() => setTab('hotdays')}>暑かった日</button>
+        <button className="tab" role="tab" aria-selected={tab === 'alltime'} onClick={() => setTab('alltime')}>気象庁公式 歴代全国</button>
+        {RANKINGS.map((d) => (
+          <button key={d.id} className="tab" role="tab" aria-selected={tab === d.id} onClick={() => setTab(d.id)}>{d.label}</button>
+        ))}
         <span style={{ flex: 1 }} />
         <label className="date-jump">
           日付で見る:
@@ -168,11 +143,14 @@ export default function Rankings() {
       {tab === 'alltime' && ranking && (
         <><p className="subhead">歴代全国（官署＋アメダス） ・ 日付/地点クリックで詳細 ・ 同着は同順位</p><AllTime ranking={ranking} codeOf={codeOf} /></>
       )}
-      {tab === 'niche' && (
-        <><p className="subhead">地点別 歴代 猛暑日(≥35℃)日数 ・ 観測期間の長い地点が有利 ・ その場で集計</p><Niche /></>
-      )}
-      {tab === 'hotdays' && (
-        <><p className="subhead">全国最高気温が高かった日 TOP150 ・ 日付クリックでその日の全国ランキング ・ その場で集計</p><HotDays /></>
+
+      {activeDef && (
+        <>
+          <p className="subhead">{typeof activeDef.desc === 'function' ? (rows ? activeDef.desc(rows) : '') : activeDef.desc}</p>
+          {err && <p className="state">集計に失敗しました: {err}</p>}
+          {!err && !rows && <p className="state">集計中…（初回はDBの起動に数秒かかります）</p>}
+          {!err && rows && <RankingTable def={activeDef} rows={rows} />}
+        </>
       )}
     </div>
   )
