@@ -84,7 +84,10 @@ def export_parquet() -> None:
     daily = pd.read_sql("SELECT station_id,date,max_temp,quality_flag FROM daily_max", con)
     daily["station_id"] = daily["station_id"].astype("int16")
     daily["date"] = pd.to_datetime(daily["date"]).dt.date
-    daily["max_temp"] = daily["max_temp"].astype("float32")
+    # 気温は0.1℃刻み。float32にすると 39.8 が 39.79999923706055 になって
+    # 往復で誤差が残るため float64 のまま保持し、念のため1桁に丸める。
+    # （zstd圧縮が効くのでサイズ差はわずか）
+    daily["max_temp"] = daily["max_temp"].astype("float64").round(1)
     daily["quality_flag"] = daily["quality_flag"].astype("category")
     daily.to_parquet(PARQUET_DIR / DAILY_PQ, compression="zstd", index=False)
 
@@ -115,6 +118,8 @@ def import_parquet() -> None:
 
     daily = pd.read_parquet(dpq)
     daily["date"] = daily["date"].astype(str)
+    # 過去に float32 で保存された版を読んだ場合の誤差を落とす（0.1℃刻みに正規化）
+    daily["max_temp"] = daily["max_temp"].astype("float64").round(1)
     daily["max_temp_time"] = None
     daily["quality_flag"] = daily["quality_flag"].astype(str)
     daily[["station_id", "date", "max_temp", "max_temp_time", "quality_flag"]].to_sql(

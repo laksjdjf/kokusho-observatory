@@ -44,7 +44,7 @@ function Niche({ niche }: { niche: NicheMousho }) {
               <td className="num-cell hot">{r.mousho.toLocaleString()}</td>
               <td className={`num-cell${r.kokusho ? ' kokusho' : ''}`}>{r.kokusho}</td>
               <td className="num-cell">{r.longest_streak}日</td>
-              <td className="num-cell">{r.record_high}℃</td>
+              <td className="num-cell">{r.record_high.toFixed(1)}℃</td>
             </tr>
           ))}
         </tbody>

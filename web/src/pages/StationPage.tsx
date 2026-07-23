@@ -35,7 +35,7 @@ export default function StationPage() {
             <section className="station-stats">
               <h2><span>記録サマリー</span><span className="h2-rule" /></h2>
               <div className="stat-grid">
-                <StatBox v={`${d.stats.record_high}℃`} l="観測史上最高" t={d.stats.record_high >= 40 ? 4 : 3} />
+                <StatBox v={`${d.stats.record_high.toFixed(1)}℃`} l="観測史上最高" t={d.stats.record_high >= 40 ? 4 : 3} />
                 <StatBox v={d.stats.kokusho.toLocaleString()} l="酷暑日 ≥40" t={4} />
                 <StatBox v={d.stats.mousho.toLocaleString()} l="猛暑日 ≥35" t={3} />
                 <StatBox v={d.stats.manatsu.toLocaleString()} l="真夏日 ≥30" t={2} />
@@ -66,7 +66,7 @@ export default function StationPage() {
                 const c = y.max >= 40 ? 'var(--t4)' : y.max >= 35 ? 'var(--t3)' : y.max >= 30 ? 'var(--t2)' : 'var(--t1)'
                 return (
                   <div className="ybar" key={y.year} style={{ height: `${Math.max(h, 3)}%`, ['--ybar-c' as string]: c }}>
-                    <span className="ybar-tip">{y.year}年 {y.max}℃ / 猛暑{y.mousho}日{y.kokusho ? ` / 酷暑${y.kokusho}日` : ''}</span>
+                    <span className="ybar-tip">{y.year}年 {y.max.toFixed(1)}℃ / 猛暑{y.mousho}日{y.kokusho ? ` / 酷暑${y.kokusho}日` : ''}</span>
                   </div>
                 )
               })}
