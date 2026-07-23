@@ -78,9 +78,9 @@ def _fresh_session() -> requests.Session:
     return s
 
 
-def fetch_station_history(stid: str, end: date) -> list[dict]:
+def fetch_station_history(stid: str, end: date, start: date = HISTORY_START) -> list[dict]:
     rows: list[dict] = []
-    for c_start, c_end in date_chunks(HISTORY_START, end, CHUNK_DAYS):
+    for c_start, c_end in date_chunks(start, end, CHUNK_DAYS):
         try:
             csv_text = obsdl.fetch_csv(_fresh_session(), stid, c_start, c_end)
         except requests.RequestException as e:
@@ -97,9 +97,50 @@ def fetch_station_history(stid: str, end: date) -> list[dict]:
     return rows
 
 
+OVERLAP_DAYS = 10   # 気象庁が後から値を訂正することがあるので直近は取り直す
+
+
+def open_db() -> sqlite3.Connection:
+    """既存DBを開く。無ければスキーマを作る。"""
+    fresh = not DB_PATH.exists()
+    con = sqlite3.connect(DB_PATH)
+    if fresh:
+        con.executescript(SCHEMA)
+        for idx in INDEXES:
+            con.execute(idx)
+        con.commit()
+    return con
+
+
+def sync_stations(con: sqlite3.Connection, stations: list[dict]) -> dict[str, int]:
+    """stations.json の内容をDBへ反映し、jma_code -> stations.id を返す。"""
+    for s in stations:
+        con.execute(
+            "INSERT INTO stations (jma_code,name,name_kana,pref,lat,lon,elevation,type)"
+            " VALUES (?,?,?,?,?,?,?,?)"
+            " ON CONFLICT(jma_code) DO UPDATE SET"
+            "  name=excluded.name, name_kana=excluded.name_kana, pref=excluded.pref,"
+            "  lat=excluded.lat, lon=excluded.lon, elevation=excluded.elevation, type=excluded.type",
+            (s["jma_code"], s["name"], s.get("name_kana"), s.get("pref"),
+             s.get("lat"), s.get("lon"), s.get("elevation"), s.get("type")),
+        )
+    con.commit()
+    return {r[1]: r[0] for r in con.execute("SELECT id,jma_code FROM stations")}
+
+
+def refresh_obs_start(con: sqlite3.Connection) -> None:
+    con.execute(
+        "UPDATE stations SET obs_start = ("
+        "  SELECT MIN(date) FROM daily_max d WHERE d.station_id = stations.id)")
+    con.commit()
+
+
 def main() -> None:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--limit", type=int, default=None, help="先頭N地点だけ取り込む（テスト用）")
+    ap.add_argument("--full", action="store_true",
+                    help="全期間を取り直してDBを作り直す（初回バックフィル用）")
     args = ap.parse_args()
 
     stations = json.load(open(STATIONS_JSON, encoding="utf-8"))["stations"]
@@ -107,55 +148,58 @@ def main() -> None:
         stations = stations[: args.limit]
     end = date.today() - timedelta(days=1)   # 当日は未確定なので昨日まで
 
-    # 収集
-    all_daily: dict[str, list[dict]] = {}
+    if args.full and DB_PATH.exists():
+        DB_PATH.unlink()
+
+    con = open_db()
+    stid_to_id = sync_stations(con, stations)
+
+    # 地点ごとの取込済み最終日（差分の起点になる）
+    have: dict[int, str] = {
+        r[0]: r[1] for r in con.execute("SELECT station_id, MAX(date) FROM daily_max GROUP BY station_id")
+    }
+
+    added = skipped = 0
     for i, s in enumerate(stations):
         stid = s["jma_code"]
-        print(f"[daily] ({i+1}/{len(stations)}) {stid} {s['pref']} {s['name']} …",
-              file=sys.stderr, end="", flush=True)
-        rows = fetch_station_history(stid, end)
-        all_daily[stid] = rows
-        span = f"{rows[0]['date']}〜{rows[-1]['date']}" if rows else "データなし"
-        print(f" {len(rows):,}行 ({span})", file=sys.stderr)
-
-    # SQLite 構築
-    if DB_PATH.exists():
-        DB_PATH.unlink()
-    con = sqlite3.connect(DB_PATH)
-    con.executescript(SCHEMA)
-
-    stid_to_id: dict[str, int] = {}
-    for s in stations:
-        obs_start = min((r["date"] for r in all_daily.get(s["jma_code"], [])), default=None)
-        cur = con.execute(
-            "INSERT INTO stations (jma_code,name,name_kana,pref,lat,lon,elevation,type,obs_start)"
-            " VALUES (?,?,?,?,?,?,?,?,?)",
-            (s["jma_code"], s["name"], s.get("name_kana"), s.get("pref"),
-             s.get("lat"), s.get("lon"), s.get("elevation"), s.get("type"), obs_start),
-        )
-        stid_to_id[s["jma_code"]] = cur.lastrowid
-
-    total = 0
-    for stid, rows in all_daily.items():
         sid = stid_to_id[stid]
+        last = have.get(sid)
+        if last:
+            # 既存分あり → 最終日の少し手前から取り直す（訂正値の取り込み）
+            start = date.fromisoformat(last) - timedelta(days=OVERLAP_DAYS)
+        else:
+            start = HISTORY_START
+        if start > end:
+            skipped += 1
+            continue
+
+        label = "全期間" if not last else f"{start}〜"
+        print(f"[daily] ({i+1}/{len(stations)}) {stid} {s['pref']} {s['name']} {label} …",
+              file=sys.stderr, end="", flush=True)
+        rows = fetch_station_history(stid, end, start)
+        # 訂正値を反映するため REPLACE（UNIQUE(station_id,date) 前提）
         con.executemany(
-            "INSERT OR IGNORE INTO daily_max (station_id,date,max_temp,max_temp_time,quality_flag)"
-            " VALUES (?,?,?,?,?)",
+            "INSERT INTO daily_max (station_id,date,max_temp,max_temp_time,quality_flag)"
+            " VALUES (?,?,?,?,?)"
+            " ON CONFLICT(station_id,date) DO UPDATE SET"
+            "  max_temp=excluded.max_temp, quality_flag=excluded.quality_flag",
             [(sid, r["date"], r["max_temp"], r["max_temp_time"], r["quality_flag"]) for r in rows],
         )
-        total += len(rows)
+        con.commit()
+        added += len(rows)
+        print(f" {len(rows):,}行", file=sys.stderr)
 
-    for idx in INDEXES:
-        con.execute(idx)
+    refresh_obs_start(con)
     con.execute("ANALYZE")
     con.commit()
 
     n_daily = con.execute("SELECT COUNT(*) FROM daily_max").fetchone()[0]
     n_st = con.execute("SELECT COUNT(*) FROM stations").fetchone()[0]
+    latest = con.execute("SELECT MAX(date) FROM daily_max").fetchone()[0]
     con.close()
-    print(f"\n[daily] SQLite 構築完了: {DB_PATH.relative_to(DATA_DIR.parent)} "
-          f"({DB_PATH.stat().st_size:,} bytes) / stations={n_st} daily_max={n_daily:,}行",
-          file=sys.stderr)
+    print(f"\n[daily] 完了: 取得{added:,}行 / 最新日 {latest} / スキップ{skipped}地点\n"
+          f"        DB: stations={n_st} daily_max={n_daily:,}行 "
+          f"({DB_PATH.stat().st_size:,} bytes)", file=sys.stderr)
 
 
 if __name__ == "__main__":

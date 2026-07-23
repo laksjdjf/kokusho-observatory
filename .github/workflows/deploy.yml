@@ -1,46 +1,67 @@
 name: build-and-deploy
 
-# 気象庁から最高気温データを取り込み → JSON生成 → Vite ビルド → GitHub Pages へデプロイ。
-# 日次 cron ＋ main への push ＋ 手動実行。
+# 日次パイプライン:
+#   HuggingFace(Parquet) から生データを取得 → SQLite再構築
+#   → 気象庁から「前回以降の差分」だけ取得 → HFへ書き戻し
+#   → 派生JSON生成 → Vite ビルド → GitHub Pages へデプロイ
+#
+# 生データの正準は HF Datasets（リポジトリにはデータを置かない）。
+# 出典：気象庁ホームページ（公共データ利用規約 第1.0版）
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '0 21 * * *'   # 毎日 06:00 JST（21:00 UTC）
   workflow_dispatch:
-  # TODO: 日次cronは「差分取込 + HuggingFace永続化」を実装してから有効化する。
-  # 現状の build_daily.py は毎回全期間を取り直す（165地点 × 全履歴 ≒ 40分、
-  # 気象庁へ約200リクエスト）ため、毎日走らせるのは不適切。
-  # schedule:
-  #   - cron: '0 21 * * *'   # 毎日 06:00 JST（21:00 UTC）
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 同時デプロイは1本に絞る（cron と push が重なっても安全）
+# 同時実行は1本に絞る（cronとpushが重なっても安全）
 concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  HF_DATASET_REPO: furusu/japan-max-temperature
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-
-      # ---- Python 取込（uv）----
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-      - name: 気象庁データ取込 → data/ 生成（歴代→日別→ビュー→日付）
+
+      - name: 生データ取得（HF → SQLite）
         working-directory: ingest
         run: |
-          uv run python build_data.py --with-stations   # 歴代ランキング＋官署マスタ
-          uv run python build_daily.py                   # 官署の日別最高気温 → SQLite
-          uv run python build_views.py                   # 昨日/地点/猛暑日回数 JSON
-          uv run python build_dates.py                   # 日付ごと JSON ＋ 暑い日索引
+          uv run python hf_store.py pull
+          uv run python hf_store.py import
 
-      # ---- フロントビルド（Vite）----
+      - name: 気象庁から差分取込
+        working-directory: ingest
+        run: |
+          uv run python build_data.py --with-stations   # 歴代ランキング＋地点マスタ
+          uv run python build_daily.py                   # 前回以降の日別値だけ
+
+      - name: 生データをHFへ書き戻し
+        working-directory: ingest
+        run: |
+          uv run python hf_store.py export
+          uv run python hf_store.py push
+
+      - name: 派生JSON生成
+        working-directory: ingest
+        run: |
+          uv run python build_views.py   # 最新日/地点/猛暑日回数
+          uv run python build_dates.py   # 日付ごと＋暑い日索引
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22

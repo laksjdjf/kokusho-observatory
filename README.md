@@ -8,22 +8,43 @@
 
 ## アーキテクチャ
 
-サーバーレス。GitHub Actions が気象庁からデータを取り込んで JSON を生成し、Vite でビルドして GitHub Pages に配信する（ランタイムDBは持たない）。
+サーバーレス。ランタイムDBを持たず、静的ファイルだけで動く。
 
 ```
-ingest/ (Python + uv)      web/ (Vite + React + TS)     .github/workflows/
-  気象庁から取得       →     data/*.json を読んで表示   ←   日次 cron で自動更新
-  data/*.json 生成
+HuggingFace Datasets          GitHub                  GitHub Pages
+ daily_max.parquet   ──pull──▶ Actions ──build JSON──▶ 静的サイト
+ （生データの正準）    ◀─push── 差分取込                （毎朝 06:00 JST 更新）
+        ▲                         │
+        └──────── 気象庁から前回以降の差分のみ取得 ──────┘
 ```
+
+**データはリポジトリに置かない。** 生データの正準は
+[HuggingFace Datasets](https://huggingface.co/datasets/furusu/japan-max-temperature)
+上の Parquet（約19MB / 600万行）で、SQLite と配信用JSONはそこから毎回組み立てる
+使い捨ての派生物。これにより:
+
+- リポジトリはコードだけ（約2MB）で履歴が汚れない
+- 日次更新は「昨日ぶんの差分」だけ取得すればよく、気象庁へのアクセスが最小限
+- 取込が壊れてもHF上のスナップショットに戻せる
 
 ## セットアップ
 
-### データ取込（Python / uv）
+### 1. データを用意する（HFから復元・推奨）
+
+clone直後はデータが無いので、HuggingFace から生データを取得して組み立てる:
 
 ```bash
-cd ingest
-uv sync
-uv run python build_data.py --with-stations   # 気象庁から取得 → ../data/*.json 生成
+cd ingest && uv sync && uv run python bootstrap.py
+```
+
+これで `data/max_temp.sqlite` と配信用JSONが揃う（気象庁へのアクセスなし・数分）。
+
+### 2. 気象庁から更新する場合（任意）
+
+```bash
+uv run python build_data.py --with-stations   # 歴代ランキング＋地点マスタ
+uv run python build_daily.py                   # 日別値の差分取込（前回以降のみ）
+uv run python build_daily.py --full            # ※全期間の再取得（40分以上・通常不要）
 ```
 
 生成物:
@@ -64,11 +85,18 @@ npm run build      # 本番ビルド → web/dist
 ### データ生成パイプライン（`ingest/`）
 
 ```bash
-uv run python build_data.py --with-stations  # 歴代ランキング＋官署マスタ → data/*.json
-uv run python build_daily.py                 # 官署の日別最高気温 → data/max_temp.sqlite
+uv run python hf_store.py pull    # HF から Parquet 取得
+uv run python hf_store.py import  # Parquet → SQLite 再構築
+uv run python build_data.py --with-stations  # 歴代ランキング＋地点マスタ
+uv run python build_daily.py                 # 日別最高気温の差分取込
+uv run python hf_store.py export  # SQLite → Parquet
+uv run python hf_store.py push    # Parquet → HF（要 HF_TOKEN / write）
 uv run python build_views.py                 # 昨日/地点/猛暑日回数 → data/*.json
 uv run python build_dates.py                 # 日付ごと → data/date/*.json ＋ dates_index
 ```
+
+CI では上記を `.github/workflows/deploy.yml` が毎朝実行する。HFへの書き戻しには
+リポジトリシークレット `HF_TOKEN`（write権限）が必要。
 
 地図用の地形データ（`web/public/japan.geojson`, 353KB）は一度だけ生成済み。作り直す場合:
 
