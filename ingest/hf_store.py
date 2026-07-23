@@ -83,7 +83,7 @@ def export_parquet() -> None:
     PARQUET_DIR.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(DB_PATH)
 
-    daily = pd.read_sql("SELECT station_id,date,max_temp,quality_flag FROM daily_max", con)
+    daily = pd.read_sql("SELECT station_id,date,max_temp,max_temp_time,quality_flag FROM daily_max", con)
     daily["station_id"] = daily["station_id"].astype("int16")
     daily["date"] = pd.to_datetime(daily["date"]).dt.date
     # 気温は0.1℃刻み。float32にすると 39.8 が 39.79999923706055 になって
@@ -91,6 +91,8 @@ def export_parquet() -> None:
     # （zstd圧縮が効くのでサイズ差はわずか）
     daily["max_temp"] = daily["max_temp"].astype("float64").round(1)
     daily["quality_flag"] = daily["quality_flag"].astype("category")
+    # 起時（実況CSV由来。obsdlでは取れないので貴重）も保持する
+    daily["max_temp_time"] = daily["max_temp_time"].astype("string")
     daily.to_parquet(PARQUET_DIR / DAILY_PQ, compression="zstd", index=False)
 
     st = pd.read_sql("SELECT * FROM stations", con)
@@ -122,7 +124,8 @@ def import_parquet() -> None:
     daily["date"] = daily["date"].astype(str)
     # 過去に float32 で保存された版を読んだ場合の誤差を落とす（0.1℃刻みに正規化）
     daily["max_temp"] = daily["max_temp"].astype("float64").round(1)
-    daily["max_temp_time"] = None
+    if "max_temp_time" not in daily.columns:
+        daily["max_temp_time"] = None
     daily["quality_flag"] = daily["quality_flag"].astype(str)
     daily[["station_id", "date", "max_temp", "max_temp_time", "quality_flag"]].to_sql(
         "daily_max", con, if_exists="append", index=False, chunksize=100_000)

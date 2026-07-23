@@ -78,8 +78,9 @@ jobs:
       - name: 派生JSON生成
         working-directory: ingest
         run: |
-          uv run python build_views.py   # 最新日/地点/猛暑日回数
-          uv run python build_dates.py   # 日付ごと＋暑い日索引
+          uv run python build_views.py   # トップ用の軽量JSON（最新日/地点ページ）
+          # 日付ごとのJSON生成は廃止。日付ページ・ランキングはブラウザ内DuckDBが
+          # Parquetへ直接SQLを投げる（4,993ファイル/59MB の生成が不要になった）
 
       - uses: actions/setup-node@v4
         with:

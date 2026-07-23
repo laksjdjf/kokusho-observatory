@@ -12,7 +12,15 @@ await mkdir(dest, { recursive: true });
 // 生成SQLite(数百MB)は配信JSONではないので除外。将来 httpvfs で使う際は別途扱う。
 await cp(src, dest, {
   recursive: true,
-  filter: (p) => !p.endsWith(".sqlite"),
+  filter: (p) => !p.endsWith(".sqlite") && !p.includes("/parquet"),
 });
 const files = await readdir(dest);
 console.log(`[copy-data] ${src} -> ${dest} : ${files.join(", ")}`);
+
+// Parquet はブラウザ内DuckDBが直接SQLを投げる本体。public直下に置く。
+const pqSrc = resolve(here, "../../data/parquet");
+const pubRoot = resolve(here, "../public");
+for (const f of ["daily_max.parquet", "stations.parquet"]) {
+  await cp(resolve(pqSrc, f), resolve(pubRoot, f));
+  console.log(`[copy-data] ${f} -> public/`);
+}

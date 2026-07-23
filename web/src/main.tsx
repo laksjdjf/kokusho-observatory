@@ -9,6 +9,7 @@ import DatePage from './pages/DatePage'
 import StationPage from './pages/StationPage'
 import StationsList from './pages/StationsList'
 import MapPage from './pages/MapPage'
+import Spike from './pages/Spike'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="station/:code" element={<StationPage />} />
           <Route path="date/:date" element={<DatePage />} />
           <Route path="map" element={<MapPage />} />
+          <Route path="spike" element={<Spike />} />
           <Route path="*" element={<Home />} />
         </Route>
       </Routes>
