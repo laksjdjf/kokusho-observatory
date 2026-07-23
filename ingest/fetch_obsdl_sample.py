@@ -128,6 +128,54 @@ def fetch_csv(session: requests.Session, stid: str, start: date, end: date) -> s
     return resp.content.decode("cp932", errors="replace")
 
 
+def build_payload_multi(stids, start: date, end: date) -> dict:
+    """複数地点をまとめて1リクエストで取得するためのpayload。
+
+    obsdlの制限は 地点数 × 要素数 × 日数 × オプション数 <= 44000。
+    1要素なので「地点数 × 日数 <= 44000」。差分取込（十数日）なら
+    全地点を1〜2リクエストに畳める。
+    """
+    payload = build_payload(stids[0], start, end, download=True)
+    payload["stationNumList"] = "[" + ",".join(f'"{s}"' for s in stids) + "]"
+    return payload
+
+
+def fetch_csv_multi(session: requests.Session, stids, start: date, end: date) -> str:
+    resp = session.post(OBSDL_TABLE_URL, data=build_payload_multi(stids, start, end), timeout=120)
+    resp.raise_for_status()
+    return resp.content.decode("cp932", errors="replace")
+
+
+def parse_daily_max_csv_multi(csv_text: str, stids) -> dict:
+    """複数地点CSVを {stid: [row, ...]} に分解する。
+
+    レイアウト（1要素・rmkFlag=1）:
+        年,月,日, [地点1] 値,品質情報,均質番号, [地点2] 値,品質情報,均質番号, ...
+    列の順序は stationNumList の順に対応するので、地点名ではなく位置で対応づける
+    （同名地点があっても取り違えない）。
+    """
+    out = {s: [] for s in stids}
+    for line in csv_text.splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) < 3 + len(stids) * 3 or not parts[0].isdigit() or not parts[1].isdigit():
+            continue
+        year, month, day = parts[0], parts[1], parts[2]
+        iso = f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+        for i, stid in enumerate(stids):
+            value, quality = parts[3 + i * 3], parts[4 + i * 3]
+            if not value:
+                continue
+            try:
+                temp = float(value)
+            except ValueError:
+                continue
+            out[stid].append({
+                "station_id": stid, "date": iso, "max_temp": temp,
+                "max_temp_time": None, "quality_flag": quality or None,
+            })
+    return out
+
+
 def parse_daily_max_csv(csv_text: str, station_id: str) -> list:
     """Parses the obsdl daily-max CSV shape into daily_max rows:
     (station_id, date, max_temp, quality_flag). Note: this CSV format has

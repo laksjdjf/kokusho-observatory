@@ -49,12 +49,25 @@ jobs:
           uv run python hf_store.py pull
           uv run python hf_store.py import
 
+      # 地点マスタの再クロールは61都道府県ぶんのPOSTで約50秒かかる一方、
+      # 内容は滅多に変わらない。通常は HF から復元した stations.json を使い、
+      # 週1回（月曜）と手動実行のときだけ気象庁から取り直す。
+      - name: 地点マスタ更新（週1回）
+        if: github.event.schedule == '0 21 * * *' && github.event_name == 'schedule'
+        working-directory: ingest
+        run: |
+          if [ "$(date -u +%u)" = "1" ]; then
+            uv run python build_data.py --with-stations
+          else
+            echo "地点マスタはHF復元版を使用（月曜のみ再クロール）"
+          fi
+
       - name: 気象庁から差分取込
         working-directory: ingest
         run: |
-          uv run python build_data.py --with-stations   # 歴代ランキング＋地点マスタ
-          uv run python build_daily.py                   # 確定値（前日まで）の差分
-          uv run python fetch_realtime.py                # 当日の速報値（実況CSV・1リクエスト）
+          uv run python build_data.py       # 歴代全国ランキング（1リクエスト）
+          uv run python build_daily.py      # 確定値（前日まで）をまとめ取得
+          uv run python fetch_realtime.py   # 当日の速報値（実況CSV・1リクエスト）
 
       - name: 生データをHFへ書き戻し
         working-directory: ingest

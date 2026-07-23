@@ -35,6 +35,7 @@ SCHEMA = """
 CREATE TABLE stations (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   jma_code   TEXT NOT NULL UNIQUE,
+  amedastable_code TEXT,   -- 実況CSV(mdrr)の観測所番号。当日速報の突合に使う
   name       TEXT NOT NULL,
   name_kana  TEXT,
   pref       TEXT,
@@ -42,7 +43,10 @@ CREATE TABLE stations (
   lon        REAL,
   elevation  REAL,
   type       TEXT,
-  obs_start  TEXT
+  obs_start  TEXT,
+  -- 全期間を取りに行っても気温が1行も返らなかった地点（雨量のみ等）。
+  -- 毎回154年ぶんを問い合わせるのは無駄なので記録して以後スキップする。
+  temp_unavailable INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE daily_max (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,6 +117,34 @@ def resolve_end_date(mode: str = "auto") -> date:
     return datetime.now(JST).date() - timedelta(days=1)
 
 
+CELL_LIMIT = 40000       # obsdlの 44000 制限に対する安全マージン
+MAX_BATCH_STATIONS = 80  # 1リクエストの応答サイズを抑えるための上限
+
+
+def fetch_batch(stids: list[str], start: date, end: date) -> dict[str, list[dict]]:
+    """複数地点を1リクエストでまとめ取りする（差分取込用）。
+
+    地点ごとに1リクエスト投げると166地点で約250秒かかるうえ気象庁にも負荷が高い。
+    差分は十数日ぶんなので、地点数×日数が制限に収まる範囲でまとめる。
+    """
+    days = (end - start).days + 1
+    per_req = max(1, min(MAX_BATCH_STATIONS, CELL_LIMIT // max(days, 1)))
+    out: dict[str, list[dict]] = {}
+    for i in range(0, len(stids), per_req):
+        chunk = stids[i:i + per_req]
+        try:
+            csv_text = obsdl.fetch_csv_multi(_fresh_session(), chunk, start, end)
+        except requests.RequestException as e:
+            print(f"    [warn] batch {i}: {e}", file=sys.stderr)
+            continue
+        if csv_text.lstrip().startswith("<!DOCTYPE"):
+            print(f"    [warn] batch {i}: エラーページ応答", file=sys.stderr)
+            continue
+        out.update(obsdl.parse_daily_max_csv_multi(csv_text, chunk))
+        time.sleep(0.5)
+    return out
+
+
 def open_db() -> sqlite3.Connection:
     """既存DBを開く。無ければスキーマを作る。"""
     fresh = not DB_PATH.exists()
@@ -122,6 +154,13 @@ def open_db() -> sqlite3.Connection:
         for idx in INDEXES:
             con.execute(idx)
         con.commit()
+    else:
+        cols = {r[1] for r in con.execute("PRAGMA table_info(stations)")}
+        for name, ddl in (("temp_unavailable", "INTEGER NOT NULL DEFAULT 0"),
+                          ("amedastable_code", "TEXT")):
+            if name not in cols:   # 既存DB（HFから復元した版など）への追加
+                con.execute(f"ALTER TABLE stations ADD COLUMN {name} {ddl}")
+        con.commit()
     return con
 
 
@@ -129,12 +168,13 @@ def sync_stations(con: sqlite3.Connection, stations: list[dict]) -> dict[str, in
     """stations.json の内容をDBへ反映し、jma_code -> stations.id を返す。"""
     for s in stations:
         con.execute(
-            "INSERT INTO stations (jma_code,name,name_kana,pref,lat,lon,elevation,type)"
-            " VALUES (?,?,?,?,?,?,?,?)"
+            "INSERT INTO stations (jma_code,amedastable_code,name,name_kana,pref,lat,lon,elevation,type)"
+            " VALUES (?,?,?,?,?,?,?,?,?)"
             " ON CONFLICT(jma_code) DO UPDATE SET"
+            "  amedastable_code=excluded.amedastable_code,"
             "  name=excluded.name, name_kana=excluded.name_kana, pref=excluded.pref,"
             "  lat=excluded.lat, lon=excluded.lon, elevation=excluded.elevation, type=excluded.type",
-            (s["jma_code"], s["name"], s.get("name_kana"), s.get("pref"),
+            (s["jma_code"], s.get("amedastable_code"), s["name"], s.get("name_kana"), s.get("pref"),
              s.get("lat"), s.get("lon"), s.get("elevation"), s.get("type")),
         )
     con.commit()
@@ -177,35 +217,61 @@ def main() -> None:
         r[0]: r[1] for r in con.execute("SELECT station_id, MAX(date) FROM daily_max GROUP BY station_id")
     }
 
-    added = skipped = 0
-    for i, s in enumerate(stations):
+    UPSERT = (
+        "INSERT INTO daily_max (station_id,date,max_temp,max_temp_time,quality_flag)"
+        " VALUES (?,?,?,?,?)"
+        " ON CONFLICT(station_id,date) DO UPDATE SET"
+        "  max_temp=excluded.max_temp, quality_flag=excluded.quality_flag"
+    )
+
+    # 起点日ごとに束ねる。既存地点はほぼ同じ起点になるので1〜2リクエストで済む。
+    # 気温が取れないと判明済みの地点（雨量のみ等）は再挑戦しない
+    no_temp = {r[0] for r in con.execute(
+        "SELECT jma_code FROM stations WHERE temp_unavailable=1")}
+
+    groups: dict[date, list[str]] = {}
+    backfill: list[str] = []
+    skipped = 0
+    for s in stations:
         stid = s["jma_code"]
-        sid = stid_to_id[stid]
-        last = have.get(sid)
-        if last:
-            # 既存分あり → 最終日の少し手前から取り直す（訂正値の取り込み）
-            start = date.fromisoformat(last) - timedelta(days=OVERLAP_DAYS)
-        else:
-            start = HISTORY_START
+        if stid in no_temp:
+            skipped += 1
+            continue
+        last = have.get(stid_to_id[stid])
+        if not last:
+            backfill.append(stid)          # 新規地点は全期間（重いので個別に取る）
+            continue
+        start = date.fromisoformat(last) - timedelta(days=OVERLAP_DAYS)
         if start > end:
             skipped += 1
             continue
+        groups.setdefault(start, []).append(stid)
 
-        label = "全期間" if not last else f"{start}〜"
-        print(f"[daily] ({i+1}/{len(stations)}) {stid} {s['pref']} {s['name']} {label} …",
+    added = 0
+    for start, stids in sorted(groups.items()):
+        days = (end - start).days + 1
+        print(f"[daily] 差分 {start}〜{end} ({days}日) × {len(stids)}地点 をまとめ取得 …",
               file=sys.stderr, end="", flush=True)
-        rows = fetch_station_history(stid, end, start)
-        # 訂正値を反映するため REPLACE（UNIQUE(station_id,date) 前提）
-        con.executemany(
-            "INSERT INTO daily_max (station_id,date,max_temp,max_temp_time,quality_flag)"
-            " VALUES (?,?,?,?,?)"
-            " ON CONFLICT(station_id,date) DO UPDATE SET"
-            "  max_temp=excluded.max_temp, quality_flag=excluded.quality_flag",
-            [(sid, r["date"], r["max_temp"], r["max_temp_time"], r["quality_flag"]) for r in rows],
-        )
+        got = fetch_batch(stids, start, end)
+        for stid, rows in got.items():
+            con.executemany(UPSERT, [(stid_to_id[stid], r["date"], r["max_temp"],
+                                      r["max_temp_time"], r["quality_flag"]) for r in rows])
+            added += len(rows)
+        con.commit()
+        print(f" {sum(len(v) for v in got.values()):,}行", file=sys.stderr)
+
+    for i, stid in enumerate(backfill):
+        print(f"[daily] 新規地点 ({i+1}/{len(backfill)}) {stid} 全期間 …",
+              file=sys.stderr, end="", flush=True)
+        rows = fetch_station_history(stid, end, HISTORY_START)
+        con.executemany(UPSERT, [(stid_to_id[stid], r["date"], r["max_temp"],
+                                  r["max_temp_time"], r["quality_flag"]) for r in rows])
+        if not rows:
+            # 全期間問い合わせて0行 = 気温を観測していない地点。以後スキップする。
+            con.execute("UPDATE stations SET temp_unavailable=1 WHERE jma_code=?", (stid,))
         con.commit()
         added += len(rows)
-        print(f" {len(rows):,}行", file=sys.stderr)
+        print(f" {len(rows):,}行{'（気温なしと記録）' if not rows else ''}", file=sys.stderr)
 
     refresh_obs_start(con)
     con.execute("ANALYZE")
