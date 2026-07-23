@@ -62,6 +62,11 @@ def main() -> None:
     stations = json.load(open(STATIONS_JSON, encoding="utf-8"))["stations"]
     by_amd = {str(s["amedastable_code"]): s["jma_code"]
               for s in stations if s.get("amedastable_code")}
+    # 突合キーが失われていると「エラーは出ないが何も入らない」状態になり、
+    # 気づかないまま当日データが止まる。ここで明示的に落とす。
+    if len(by_amd) < len(stations) * 0.5:
+        sys.exit(f"[rct] 中断: amedastable_code を持つ地点が {len(by_amd)}/{len(stations)} しかない。"
+                 " `uv run python build_data.py --with-stations` で地点マスタを取り直してください。")
 
     con = open_db()
     stid_to_id = {r[1]: r[0] for r in con.execute("SELECT id,jma_code FROM stations")}
